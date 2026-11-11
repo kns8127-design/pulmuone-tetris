@@ -34,26 +34,92 @@
     return data;
   };
 
-  /* SSE 연결 — 끊기면 자동 재연결, 서버 시계 오프셋 계산 */
+  /*
+   * 실시간 상태 — 서버리스(Vercel) 환경용
+   * 서버가 상태를 바꾸면 Supabase Realtime 으로 "변경 신호"만 오고(데이터 없음),
+   * 각 화면은 신호를 받으면 /api/state 로 자기 화면 데이터를 다시 읽는다.
+   * Realtime 이 끊겨도 주기적 폴링으로 동작한다. 서버 시계 오프셋도 여기서 계산.
+   */
   PM.clockOffset = 0;
   PM.serverNow = () => Date.now() + PM.clockOffset;
+  const SUPABASE_JS = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
+  const streams = new Set();
+  let rt = null; let rtOk = false;
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script'); s.src = src; s.async = true;
+      s.onload = resolve; s.onerror = () => reject(new Error('load ' + src));
+      document.head.appendChild(s);
+    });
+  }
+  function realtime() {
+    if (rt) return rt;
+    rt = (async () => {
+      const cfg = await PM.api('/api/config');
+      if (!window.supabase) await loadScript(SUPABASE_JS);
+      const client = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey, { auth: { persistSession: false, autoRefreshToken: false } });
+      client.channel('ev-signal')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ev_signal' }, (msg) => {
+          const scope = (msg.new && msg.new.scope) || 'all';
+          streams.forEach((s) => s.signal(scope));
+        })
+        .subscribe((status) => {
+          const ok = status === 'SUBSCRIBED';
+          if (ok && !rtOk) streams.forEach((s) => s.signal('all')); // (재)연결 시 놓친 변경 따라잡기
+          rtOk = ok;
+        });
+      return client;
+    })().catch((e) => { console.warn('[realtime] 폴링으로 동작합니다:', e.message); });
+    return rt;
+  }
+  PM.refreshStreams = () => streams.forEach((s) => s.fetchNow());
+
   PM.stream = function (url, onData, onStatus) {
-    let es; let closed = false; let retry = 1000;
-    const connect = () => {
-      es = new EventSource(url);
-      es.onopen = () => { retry = 1000; onStatus && onStatus(true); };
-      es.onmessage = (ev) => {
-        const d = JSON.parse(ev.data);
-        if (d.serverNow) PM.clockOffset = d.serverNow - Date.now();
+    const stateUrl = url.replace('/api/stream', '/api/state');
+    const role = new URL(stateUrl, location.href).searchParams.get('role');
+    let closed = false; let inflight = false; let again = false; let timer = null; let deadlineTimer = null;
+    // 참가자는 Realtime 신호 위주(폴링은 안전망), 스크린·콘솔은 체크인 수 등 통계 때문에 짧게 폴링
+    const pollMs = () => (role === 'player' ? (rtOk ? 15000 : 3000) : role === 'admin' ? 2500 : 3000);
+    const schedule = (ms) => { clearTimeout(timer); if (!closed) timer = setTimeout(fetchNow, ms); };
+    async function fetchNow() {
+      if (closed) return;
+      if (inflight) { again = true; return; }
+      inflight = true; clearTimeout(timer);
+      try {
+        const t0 = Date.now();
+        const res = await fetch(stateUrl, { credentials: 'same-origin', cache: 'no-store' });
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok) throw Object.assign(new Error(d.error || res.status), { status: res.status });
+        if (d.serverNow) PM.clockOffset = d.serverNow - (t0 + Date.now()) / 2;
+        onStatus && onStatus(true);
         onData(d);
-      };
-      es.onerror = () => {
+        // 퀴즈 제한 시간이 끝나면 자동 마감 상태를 바로 받아 오도록
+        const q = d.quiz;
+        clearTimeout(deadlineTimer);
+        if (q && q.state === 'RUNNING' && q.deadline) {
+          const wait = q.deadline - PM.serverNow() + 1500 + Math.random() * 1500;
+          if (wait > 0 && wait < 3600000) deadlineTimer = setTimeout(fetchNow, wait);
+        }
+      } catch (e) {
         onStatus && onStatus(false);
-        if (es.readyState === EventSource.CLOSED && !closed) { setTimeout(connect, retry); retry = Math.min(retry * 2, 10000); }
-      };
+      }
+      inflight = false;
+      if (again) { again = false; return fetchNow(); }
+      schedule(pollMs());
+    }
+    const s = {
+      fetchNow,
+      signal(scope) {
+        if (role === 'player') {
+          if (scope !== 'all') return;
+          schedule(Math.random() * 400); // 수백 대가 동시에 요청하지 않도록 분산
+        } else fetchNow();
+      },
     };
-    connect();
-    return { close() { closed = true; es && es.close(); } };
+    streams.add(s);
+    fetchNow();
+    realtime();
+    return { close() { closed = true; clearTimeout(timer); clearTimeout(deadlineTimer); streams.delete(s); } };
   };
 
   PM.mascot = (size, cls) => `<img class="mascot ${cls || ''}" src="/assets/mascot" alt="두식이" width="${size}" height="${size}" draggable="false">`;

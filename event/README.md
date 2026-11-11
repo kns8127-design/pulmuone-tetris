@@ -2,19 +2,38 @@
 
 두식이와 함께하는 행사 운영 시스템입니다. 운영자 한 명이 PC 한 대로 참석자 체크인, 럭키드로우, 실시간 퀴즈, 수상자 발표까지 진행할 수 있습니다.
 
-- 외부 패키지 없이 **Node.js 18 이상**만 있으면 실행됩니다.
-- 실시간 전달은 SSE로 하고, 데이터는 `data/db.json`에 저장합니다.
-- 추첨, 채점, 풀이 시간 측정은 모두 서버에서 합니다. 정답은 참가자 브라우저로 전달하지 않습니다.
+- **Vercel**(정적 화면 + 서버리스 함수 `api/handler.js`)과 **Supabase**(Postgres + Realtime)로 동작합니다. 외부 npm 패키지는 없습니다.
+- 데이터는 Supabase의 `ev` 스키마에 저장합니다. 참석자와 퀴즈 답안은 사람마다 별도 행이라, 동시에 체크인하거나 답안을 내도 서로 기다리지 않습니다.
+- 상태가 바뀌면 `public.ev_signal` 테이블이 갱신됩니다. 각 화면은 Supabase Realtime으로 이 신호만 받고, `/api/state`에서 자기 화면 데이터를 다시 읽습니다. 실시간 채널로는 데이터가 오가지 않습니다. Realtime이 끊기면 자동으로 주기적 조회(폴링)로 바뀝니다.
+- 추첨, 채점, 풀이 시간 측정은 모두 서버에서 합니다. 정답은 결과 발표 전까지 참가자 브라우저로 전달하지 않습니다.
 
-## 실행
+## 배포 (Vercel)
+
+`main` 브랜치에 푸시하면 Vercel 프로젝트 `event`(Root Directory: `event`)가 자동으로 배포합니다.
+
+| 환경변수 | 내용 |
+|---|---|
+| `SUPABASE_URL` | Supabase 프로젝트 주소 |
+| `SUPABASE_KEY` | Supabase publishable 키 (공개 키) |
+| `EV_SECRET` | DB 함수 `ev_read`/`ev_write` 호출용 비밀값. `ev.config.secret`과 같아야 합니다 |
+| `SESSION_SECRET` | 관리자 로그인 쿠키 서명 키 |
+| `ADMIN_PASSWORD` / `OPERATOR_PASSWORD` | 최고 관리자 / 행사 운영자 비밀번호 |
+| `NODEJS_HELPERS` | `0` (요청 본문을 함수가 직접 읽도록 설정) |
+
+DB 테이블은 Supabase 마이그레이션 `event_core`로 만들었습니다. 테이블은 공개 API에 노출되지 않는 `ev` 스키마에 있고, 비밀값을 확인하는 함수를 거쳐야만 접근할 수 있습니다.
+
+> 참석자가 휴대폰으로 접속하려면 Vercel **Deployment Protection(Vercel Authentication)**을 끄거나 커스텀 도메인을 연결해야 합니다.
+> 그대로 두면 참석자에게 Vercel 로그인 화면이 뜹니다.
+
+## 로컬 실행 (리허설·개발)
 
 ```bash
 cd event
-# 행사 전 반드시 비밀번호 설정
-set ADMIN_PASSWORD=최고관리자비밀번호      # PowerShell: $env:ADMIN_PASSWORD="..."
-set OPERATOR_PASSWORD=운영자비밀번호
-npm start                                  # 또는 node server.js  (기본 포트 3000, PORT 로 변경)
+# .env 파일에 위 환경변수를 넣습니다 (.env 는 git 에 올라가지 않음)
+npm run dev        # node --env-file=.env server.js (기본 포트 3000, PORT 로 변경)
 ```
+
+로컬 서버도 같은 Supabase DB를 씁니다. 리허설이 끝나면 **설정 → 데이터 초기화**로 테스트 기록을 정리하세요.
 
 | 화면 | 주소 | 용도 |
 |---|---|---|
@@ -23,11 +42,7 @@ npm start                                  # 또는 node server.js  (기본 포�
 | 체크인 (모바일) | `/checkin` | 스크린 홈 화면의 QR |
 | 퀴즈 (모바일) | `/quiz` | 스크린 퀴즈 화면의 QR |
 
-**참석자 휴대폰에서 접속하려면** 서버 PC와 같은 와이파이에서 `http://PC-IP:3000`으로 접속하게 하거나 공개 서버에 배포합니다. 서버를 실행하면 콘솔에 접속 주소가 출력됩니다. 콘솔의 **설정 → 참석자용 공개 주소**에 그 주소를 넣으면 QR에 반영됩니다.
-
-> Vercel 같은 서버리스 정적 호스팅에서는 동작하지 않습니다. 실시간 연결을 계속 유지하고 상태를 저장해야 하기 때문입니다.
-> 사내 PC나 서버, 또는 Render·Railway·Fly.io·클라우드 VM처럼 Node 프로세스가 계속 떠 있는 곳에 배포하세요.
-> 배포할 때 `DATA_DIR`을 영구 디스크 경로로 지정하고, 반드시 HTTPS를 사용하세요.
+QR 코드에는 현재 접속한 주소가 들어갑니다. 다른 도메인으로 안내하려면 콘솔의 **설정 → 참석자용 공개 주소**에 그 주소를 넣으세요.
 
 ## 행사 당일 순서
 
@@ -47,7 +62,7 @@ npm start                                  # 또는 node server.js  (기본 포�
 
 ## 두식이 캐릭터 이미지
 
-`public/assets/dusik.svg`는 임시 일러스트입니다. 공식 캐릭터 이미지를 `public/assets/dusik.png`(또는 `.webp`)로 넣으면 모든 화면에 자동으로 적용됩니다. 정사각형에 투명 배경인 이미지를 권장합니다.
+`public/assets/dusik.svg`는 임시 일러스트입니다. 공식 캐릭터 이미지로 바꾸려면 이 파일을 교체하거나, `public/assets/dusik.png`를 넣고 `vercel.json`(로컬은 `server.js`)의 `/assets/mascot` 경로를 그 파일로 바꾸세요. 정사각형에 투명 배경인 이미지를 권장합니다.
 
 ## 사운드
 

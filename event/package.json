@@ -1,13 +1,14 @@
 {
   "name": "pulmuone-event",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "풀무원 컨퍼런스 럭키드로우 & 실시간 퀴즈 이벤트 시스템",
+  "description": "풀무원 컨퍼런스 럭키드로우 & 실시간 퀴즈 이벤트 시스템 (Vercel + Supabase)",
   "main": "server.js",
   "scripts": {
+    "dev": "node --env-file=.env server.js",
     "start": "node server.js"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   }
 }

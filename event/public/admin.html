@@ -271,7 +271,7 @@
   const ROLE = { super: '최고 관리자', operator: '행사 운영자' };
   const STATE_KO = { IDLE: '준비', OPEN: '대기실 열림', RUNNING: '진행 중', CLOSED: '마감', REVEALED: '결과 발표' };
   const RV_KO = { duplicate: '중복 응답', conflict: '연락처 충돌', missing_field: '필수값 누락', no_consent: '미동의', name_mismatch: '이름 불일치' };
-  const act = async (path, body, okMsg) => { try { const r = await api(path, body); if (okMsg) toast(okMsg, 'ok'); return r; } catch (e) { toast(e.message, 'error'); throw e; } };
+  const act = async (path, body, okMsg) => { try { const r = await api(path, body); if (okMsg) toast(okMsg, 'ok'); PM.refreshStreams(); return r; } catch (e) { toast(e.message, 'error'); throw e; } };
 
   /* ── 로그인 ── */
   async function boot() {
