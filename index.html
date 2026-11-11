@@ -80,6 +80,11 @@
         }
         .pm-btn-primary:hover { background: var(--pm-green-dark); }
 
+        /* Page navigation */
+        .nav-link { color: #4a4a49; border-bottom: 2px solid transparent; transition: all .2s; }
+        .nav-link:hover { color: var(--pm-deep); }
+        .nav-link.active { color: var(--pm-deep); border-color: var(--pm-green); font-weight: 700; }
+
         /* Underscore title accent (사이트의 _바른먹거리_ 스타일) */
         .pm-accent { color: var(--pm-green); }
 
@@ -99,18 +104,23 @@
 
     <!-- Header / Navbar -->
     <header class="w-full bg-white border-b border-[#ece9de] z-10">
-        <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center gap-3">
             <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-full bg-[#8dc63f] flex items-center justify-center">
+                <div class="w-9 h-9 rounded-full bg-[#8dc63f] flex items-center justify-center shrink-0">
                     <i class="fa-solid fa-leaf text-white text-base"></i>
                 </div>
                 <div class="leading-tight">
-                    <h1 class="text-lg md:text-xl font-extrabold font-title text-[#056130] tracking-tight">
+                    <h1 class="text-base sm:text-lg md:text-xl font-extrabold font-title text-[#056130] tracking-tight whitespace-nowrap">
                         풀무원 테트리스
                     </h1>
                     <p class="hidden sm:block text-[11px] text-[#849c62] font-medium">나를 위해. 지구를 위해.</p>
                 </div>
             </div>
+
+            <nav class="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm font-title whitespace-nowrap">
+                <a href="index.html" class="nav-link active py-1">테트리스</a>
+                <a href="lucky-draw.html" class="nav-link py-1">럭키드로우</a>
+            </nav>
 
             <div class="flex items-center gap-2">
                 <button id="bgmToggleBtn" class="pm-btn-outline px-3 py-1.5 flex items-center gap-2 text-sm">
@@ -202,7 +212,7 @@
                             <h2 class="text-2xl sm:text-3xl font-black font-title mb-3 text-[#056130]">
                                 <span class="pm-accent">_</span>바른 테트리스<span class="pm-accent">_</span>
                             </h2>
-                            <p class="text-[#766c56] text-xs sm:text-sm mb-7 max-w-xs leading-relaxed">
+                            <p class="text-[#766c56] text-xs sm:text-sm mb-7 max-w-xs leading-relaxed break-keep">
                                 블록을 차곡차곡 쌓아 한 줄을 완성해보세요.<br>건강한 한 판, 지금 시작합니다!
                             </p>
                             <button id="startGameBtn" class="pm-btn-primary px-9 py-3.5 font-title font-extrabold tracking-wide transition transform hover:-translate-y-0.5">
@@ -1251,5 +1261,6 @@
             }
         }
     </script>
+<script src="https://chatbot.aiconvergencelab.com/widget.js" data-slug="bot-da8e7df5" data-title="동수봇" defer></script>
 </body>
 </html>

@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>풀무원 럭키드로우</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.js for Sound Effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Fonts: Noto Sans KR + NanumSquare -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/moonspam/NanumSquare@2.0/nanumsquare.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --pm-green: #8dc63f;
+            --pm-green-dark: #68a12a;
+            --pm-deep: #056130;
+            --pm-cream: #ece9de;
+            --pm-cream-light: #f7f5ee;
+            --pm-olive: #444c38;
+            --pm-sage: #849c62;
+            --pm-brown: #766c56;
+            --pm-text: #333333;
+            --pm-gray: #d4d4d4;
+        }
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            color: var(--pm-text);
+            background: var(--pm-cream-light);
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        input { -webkit-user-select: text; user-select: text; }
+        .font-title { font-family: 'NanumSquare', 'Noto Sans KR', sans-serif; }
+        .pm-panel {
+            background: #fff;
+            border: 1px solid var(--pm-cream);
+            box-shadow: 0 6px 20px rgba(68, 76, 56, 0.06);
+        }
+        .pm-label {
+            font-family: 'NanumSquare', 'Noto Sans KR', sans-serif;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            color: var(--pm-sage);
+        }
+        .pm-well { background: var(--pm-cream-light); border: 1px solid var(--pm-cream); }
+        .pm-btn-outline {
+            border: 1px solid var(--pm-gray);
+            color: #4a4a49;
+            background: #fff;
+            border-radius: 9999px;
+            transition: all .2s;
+        }
+        .pm-btn-outline:hover:not(:disabled) { border-color: var(--pm-green); color: var(--pm-deep); }
+        .pm-btn-primary {
+            background: var(--pm-green);
+            color: #fff;
+            border-radius: 9999px;
+            font-weight: 700;
+            transition: all .2s;
+            box-shadow: 0 6px 16px rgba(141, 198, 63, 0.35);
+        }
+        .pm-btn-primary:hover:not(:disabled) { background: var(--pm-green-dark); }
+        .pm-btn-primary:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+        .pm-accent { color: var(--pm-green); }
+        .nav-link { color: #4a4a49; border-bottom: 2px solid transparent; transition: all .2s; }
+        .nav-link:hover { color: var(--pm-deep); }
+        .nav-link.active { color: var(--pm-deep); border-color: var(--pm-green); font-weight: 700; }
+        .pm-input {
+            background: #fff;
+            border: 1px solid var(--pm-cream);
+            border-radius: 8px;
+            padding: 6px 8px;
+            font-size: 13px;
+            outline: none;
+            transition: border-color .2s;
+        }
+        .pm-input:focus { border-color: var(--pm-green); }
+        .pm-input:disabled { background: var(--pm-cream-light); color: #999; }
+
+        /* Wheel pointer */
+        .wheel-pointer {
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0; height: 0;
+            border-left: 16px solid transparent;
+            border-right: 16px solid transparent;
+            border-top: 30px solid var(--pm-deep);
+            filter: drop-shadow(0 3px 3px rgba(0,0,0,.2));
+            z-index: 5;
+        }
+        .pop-in { animation: popIn .35s cubic-bezier(.2,1.4,.4,1) both; }
+        @keyframes popIn { from { transform: scale(.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--pm-cream-light); }
+        ::-webkit-scrollbar-thumb { background: var(--pm-gray); border-radius: 3px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <!-- Header / Navbar -->
+    <header class="w-full bg-white border-b border-[#ece9de] z-10">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-[#8dc63f] flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-leaf text-white text-base"></i>
+                </div>
+                <div class="leading-tight">
+                    <h1 class="text-base sm:text-lg md:text-xl font-extrabold font-title text-[#056130] tracking-tight whitespace-nowrap">
+                        풀무원 럭키드로우
+                    </h1>
+                    <p class="hidden sm:block text-[11px] text-[#849c62] font-medium">나를 위해. 지구를 위해.</p>
+                </div>
+            </div>
+
+            <nav class="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm font-title whitespace-nowrap">
+                <a href="index.html" class="nav-link py-1">테트리스</a>
+                <a href="lucky-draw.html" class="nav-link active py-1">럭키드로우</a>
+            </nav>
+
+            <button id="soundToggleBtn" class="pm-btn-outline px-3 py-1.5 flex items-center gap-2 text-sm">
+                <i id="soundIcon" class="fa-solid fa-volume-high"></i>
+                <span id="soundText" class="hidden sm:inline">효과음 ON</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main -->
+    <main class="flex-1 w-full max-w-5xl mx-auto p-3 sm:p-4">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+
+            <!-- Wheel -->
+            <section class="md:col-span-7 pm-panel rounded-2xl p-4 sm:p-6 flex flex-col items-center">
+                <p class="text-xs font-bold text-[#849c62] tracking-widest mb-1 font-title">LUCKY DRAW</p>
+                <h2 class="text-2xl sm:text-3xl font-black font-title text-[#056130] mb-1">
+                    <span class="pm-accent">_</span>행운의 룰렛<span class="pm-accent">_</span>
+                </h2>
+                <p class="text-[#766c56] text-xs sm:text-sm mb-5">버튼을 눌러 오늘의 행운을 확인하세요!</p>
+
+                <div id="wheelWrap" class="relative w-full max-w-[420px] aspect-square">
+                    <div class="wheel-pointer"></div>
+                    <canvas id="wheelCanvas" class="w-full h-full block"></canvas>
+                    <button id="hubBtn" aria-label="룰렛 돌리기"
+                        class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[22%] aspect-square rounded-full bg-white border-4 border-[#8dc63f] shadow-lg flex flex-col items-center justify-center text-[#056130] font-title font-black text-sm sm:text-base hover:scale-105 transition disabled:opacity-60 disabled:hover:scale-100">
+                        <i class="fa-solid fa-leaf text-[#8dc63f] mb-0.5"></i>START
+                    </button>
+                </div>
+
+                <div class="mt-6 flex flex-col items-center gap-2 w-full">
+                    <button id="spinBtn" class="pm-btn-primary px-10 py-3.5 font-title font-extrabold tracking-wide text-base flex items-center gap-2">
+                        <i class="fa-solid fa-rotate"></i> 룰렛 돌리기
+                    </button>
+                    <p id="statusText" class="text-xs text-[#849c62] h-4"></p>
+                </div>
+            </section>
+
+            <!-- Side Panels -->
+            <div class="md:col-span-5 flex flex-col gap-4">
+                <!-- Prize Settings -->
+                <section class="pm-panel rounded-2xl p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="pm-label">경품 설정</span>
+                        <span class="text-xs text-[#766c56]">남은 수량 <b id="totalRemain" class="text-[#056130]">0</b>개</span>
+                    </div>
+                    <div class="grid grid-cols-[14px_1fr_64px_28px] gap-2 px-1 mb-1 text-[11px] text-[#849c62] font-medium">
+                        <span></span><span>경품명</span><span class="text-center">수량</span><span></span>
+                    </div>
+                    <div id="prizeList" class="flex flex-col gap-1.5 max-h-72 overflow-y-auto pr-1"></div>
+                    <div class="flex gap-2 mt-3">
+                        <button id="addPrizeBtn" class="pm-btn-outline flex-1 py-2 text-xs font-semibold flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-plus"></i> 경품 추가
+                        </button>
+                        <button id="resetQtyBtn" class="pm-btn-outline flex-1 py-2 text-xs font-semibold flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-rotate-left"></i> 수량 초기화
+                        </button>
+                    </div>
+                    <p class="text-[11px] text-[#999] mt-2 leading-relaxed">
+                        당첨 확률은 남은 수량에 비례하며, 당첨될 때마다 수량이 1개씩 줄어듭니다.
+                        이름에 ‘꽝’이 들어간 항목은 미당첨으로 처리됩니다.
+                    </p>
+                </section>
+
+                <!-- History -->
+                <section class="pm-panel rounded-2xl p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="pm-label">당첨 기록</span>
+                        <button id="clearHistoryBtn" class="text-xs text-[#849c62] hover:text-[#056130]">
+                            <i class="fa-regular fa-trash-can"></i> 기록 지우기
+                        </button>
+                    </div>
+                    <ul id="historyList" class="flex flex-col gap-1.5 max-h-56 overflow-y-auto pr-1 text-sm"></ul>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Result Modal -->
+    <div id="resultModal" class="hidden fixed inset-0 bg-[#444c38]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div id="resultCard" class="pm-panel w-full max-w-sm p-7 rounded-3xl shadow-2xl text-center">
+            <div id="resultIconWrap" class="w-16 h-16 mx-auto rounded-full bg-[#8dc63f] flex items-center justify-center mb-4">
+                <i id="resultIcon" class="fa-solid fa-gift text-3xl text-white"></i>
+            </div>
+            <p id="resultLabel" class="pm-label mb-1">CONGRATULATIONS</p>
+            <h3 id="resultTitle" class="text-xl font-black font-title text-[#056130] mb-2">축하합니다!</h3>
+            <p id="resultPrize" class="text-2xl font-black font-title text-[#333] mb-1 break-keep"></p>
+            <p id="resultDesc" class="text-sm text-[#766c56] mb-6"></p>
+            <button id="closeResultBtn" class="pm-btn-primary w-full py-3">확인</button>
+        </div>
+    </div>
+
+    <!-- Confetti layer -->
+    <canvas id="confettiCanvas" class="fixed inset-0 pointer-events-none z-[60]"></canvas>
+
+    <!-- Footer -->
+    <footer class="w-full bg-[#3f3f3e] text-[#bec3b9]">
+        <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-1 text-xs">
+            <span class="font-title font-extrabold text-white tracking-wide">PULMUONE LUCKY DRAW</span>
+            <span>나를 위해. 지구를 위해. &middot; Built with HTML5 Canvas & Web Audio API</span>
+        </div>
+    </footer>
+
+    <script>
+        // --- CONFIG ---
+        const STORAGE_KEY = 'pulmuone-lucky-draw-v1';
+        const PALETTE = ['#8dc63f', '#056130', '#f0c53d', '#4fb3a9', '#e8893a', '#68a12a', '#8e6a9e', '#d9534f', '#a6ce39', '#766c56'];
+        const DEFAULT_PRIZES = [
+            { name: '1등 풀무원 선물세트', qty: 1 },
+            { name: '2등 건강식품 세트', qty: 3 },
+            { name: '3등 모바일 상품권', qty: 10 },
+            { name: '4등 음료 기프티콘', qty: 20 },
+            { name: '꽝', qty: 15 }
+        ];
+        const SPIN_DURATION = 5200; // ms
+
+        // --- STATE ---
+        let prizes = [];
+        let history = [];
+        let rotation = 0;
+        let spinning = false;
+        let nextId = 1;
+
+        // --- STORAGE (per-browser convenience; safe to fail) ---
+        function save() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({ prizes, history }));
+            } catch (e) { /* ignore */ }
+        }
+        function load() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const data = JSON.parse(raw);
+                    if (Array.isArray(data.prizes) && data.prizes.length) {
+                        prizes = data.prizes;
+                        history = Array.isArray(data.history) ? data.history : [];
+                        nextId = prizes.reduce((m, p) => Math.max(m, p.id), 0) + 1;
+                        return;
+                    }
+                }
+            } catch (e) { /* ignore */ }
+            prizes = DEFAULT_PRIZES.map((p, i) => makePrize(p.name, p.qty, i));
+            history = [];
+        }
+        function makePrize(name, qty, idx) {
+            return { id: nextId++, name, qty, initial: qty, color: PALETTE[idx % PALETTE.length] };
+        }
+
+        const isLose = (p) => p.name.includes('꽝');
+        const available = () => prizes.filter(p => p.qty > 0 && p.name.trim() !== '');
+        const totalRemain = () => available().reduce((s, p) => s + p.qty, 0);
+
+        // --- SOUND ---
+        const sound = {
+            enabled: true,
+            ready: false,
+            tickSynth: null,
+            polySynth: null,
+            init() {
+                if (this.ready || typeof Tone === 'undefined') return;
+                try {
+                    Tone.start();
+                    this.tickSynth = new Tone.MembraneSynth({
+                        pitchDecay: 0.008, octaves: 2,
+                        envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.02 }
+                    }).toDestination();
+                    this.tickSynth.volume.value = -14;
+                    this.polySynth = new Tone.PolySynth(Tone.Synth).toDestination();
+                    this.polySynth.volume.value = -10;
+                    this.ready = true;
+                } catch (e) { /* audio unavailable */ }
+            },
+            tick() {
+                if (!this.enabled || !this.ready) return;
+                try { this.tickSynth.triggerAttackRelease('C5', '64n'); } catch (e) {}
+            },
+            win() {
+                if (!this.enabled || !this.ready) return;
+                try {
+                    const now = Tone.now();
+                    ['C5', 'E5', 'G5', 'C6'].forEach((n, i) => this.polySynth.triggerAttackRelease(n, '8n', now + i * 0.1));
+                } catch (e) {}
+            },
+            lose() {
+                if (!this.enabled || !this.ready) return;
+                try {
+                    const now = Tone.now();
+                    ['E4', 'C4'].forEach((n, i) => this.polySynth.triggerAttackRelease(n, '8n', now + i * 0.18));
+                } catch (e) {}
+            }
+        };
+
+        // --- WHEEL RENDERING ---
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        let size = 0;
+
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            size = rect.width;
+            canvas.width = Math.round(rect.width * dpr);
+            canvas.height = Math.round(rect.width * dpr);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            drawWheel();
+        }
+
+        // Segments in wheel coordinates: angle 0 = top, clockwise.
+        function getSegments() {
+            const list = available();
+            const total = list.reduce((s, p) => s + p.qty, 0);
+            let acc = 0;
+            return list.map(p => {
+                const start = acc / total * Math.PI * 2;
+                acc += p.qty;
+                const end = acc / total * Math.PI * 2;
+                return { prize: p, start, end };
+            });
+        }
+
+        function drawWheel() {
+            if (!size) return;
+            const cx = size / 2, cy = size / 2;
+            const R = size / 2 - 10;
+            ctx.clearRect(0, 0, size, size);
+
+            // Outer ring
+            ctx.beginPath();
+            ctx.arc(cx, cy, R + 8, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = 'rgba(68, 76, 56, 0.18)';
+            ctx.shadowBlur = 14;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#ece9de';
+            ctx.stroke();
+
+            const segs = getSegments();
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(rotation);
+
+            if (segs.length === 0) {
+                ctx.beginPath();
+                ctx.arc(0, 0, R, 0, Math.PI * 2);
+                ctx.fillStyle = '#ece9de';
+                ctx.fill();
+                ctx.fillStyle = '#766c56';
+                ctx.font = `700 ${Math.max(12, size * 0.04)}px 'NanumSquare', 'Noto Sans KR', sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('남은 경품이 없습니다', 0, R * 0.55);
+                ctx.restore();
+                return;
+            }
+
+            segs.forEach(seg => {
+                // canvas angle 0 = right; wheel angle 0 = top -> offset by -90deg
+                const a0 = seg.start - Math.PI / 2;
+                const a1 = seg.end - Math.PI / 2;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.arc(0, 0, R, a0, a1);
+                ctx.closePath();
+                ctx.fillStyle = seg.prize.color;
+                ctx.fill();
+                if (segs.length > 1) {
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.stroke();
+                }
+
+                // Label
+                const sweep = seg.end - seg.start;
+                const mid = (a0 + a1) / 2;
+                const fontSize = Math.max(10, Math.min(size * 0.034, sweep * R * 0.45));
+                if (sweep * R < 12) return; // too thin to label
+                ctx.save();
+                ctx.rotate(mid);
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = textColorFor(seg.prize.color);
+                ctx.font = `800 ${fontSize}px 'NanumSquare', 'Noto Sans KR', sans-serif`;
+                const maxW = R * 0.66;
+                ctx.fillText(fitText(seg.prize.name, maxW), R - 14, 0);
+                ctx.restore();
+            });
+
+            ctx.restore();
+
+            // Pegs on rim
+            const pegs = 24;
+            for (let i = 0; i < pegs; i++) {
+                const a = i / pegs * Math.PI * 2 + rotation;
+                ctx.beginPath();
+                ctx.arc(cx + Math.cos(a) * (R + 1), cy + Math.sin(a) * (R + 1), 2.6, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = 'rgba(68, 76, 56, 0.25)';
+                ctx.stroke();
+            }
+        }
+
+        function fitText(text, maxW) {
+            if (ctx.measureText(text).width <= maxW) return text;
+            let t = text;
+            while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+            return t + '…';
+        }
+
+        function textColorFor(hex) {
+            const n = parseInt(hex.slice(1), 16);
+            const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+            const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            return lum > 0.62 ? '#333333' : '#ffffff';
+        }
+
+        // Which segment is under the top pointer for the current rotation
+        function segmentIndexAtPointer(rot, segs) {
+            const tau = Math.PI * 2;
+            const a = ((-rot) % tau + tau) % tau;
+            return segs.findIndex(s => a >= s.start && a < s.end);
+        }
+
+        // --- SPIN LOGIC ---
+        function pickWeighted(list) {
+            const total = list.reduce((s, p) => s + p.qty, 0);
+            let r = Math.random() * total;
+            for (const p of list) {
+                if ((r -= p.qty) < 0) return p;
+            }
+            return list[list.length - 1];
+        }
+
+        function spin() {
+            if (spinning) return;
+            sound.init();
+            const list = available();
+            if (list.length === 0) {
+                setStatus('남은 경품이 없습니다. 수량을 초기화하거나 경품을 추가해 주세요.');
+                return;
+            }
+
+            const winner = pickWeighted(list);
+            const segs = getSegments();
+            const seg = segs.find(s => s.prize.id === winner.id);
+            const sweep = seg.end - seg.start;
+            const landing = seg.start + sweep * (0.15 + Math.random() * 0.7);
+
+            const tau = Math.PI * 2;
+            const current = ((rotation % tau) + tau) % tau;
+            const targetMod = ((-landing) % tau + tau) % tau;
+            let delta = targetMod - current;
+            if (delta < 0) delta += tau;
+            const spins = 6 + Math.floor(Math.random() * 3);
+            const startRot = rotation;
+            const endRot = rotation + spins * tau + delta;
+
+            spinning = true;
+            setControlsDisabled(true);
+            setStatus('두근두근…');
+
+            const t0 = performance.now();
+            let lastIdx = segmentIndexAtPointer(rotation, segs);
+
+            function frame(now) {
+                const t = Math.min(1, (now - t0) / SPIN_DURATION);
+                const eased = 1 - Math.pow(1 - t, 4); // easeOutQuart
+                rotation = startRot + (endRot - startRot) * eased;
+                drawWheel();
+
+                const idx = segmentIndexAtPointer(rotation, segs);
+                if (idx !== lastIdx) { sound.tick(); lastIdx = idx; }
+
+                if (t < 1) {
+                    requestAnimationFrame(frame);
+                } else {
+                    rotation = endRot % tau;
+                    finishSpin(winner);
+                }
+            }
+            requestAnimationFrame(frame);
+        }
+
+        function finishSpin(winner) {
+            spinning = false;
+            winner.qty = Math.max(0, winner.qty - 1);
+            const lose = isLose(winner);
+            history.unshift({ name: winner.name, color: winner.color, lose, time: Date.now() });
+            if (history.length > 200) history.length = 200;
+            save();
+            renderPrizeList();
+            renderHistory();
+            drawWheel();
+            setControlsDisabled(false);
+            setStatus('');
+            showResult(winner, lose);
+        }
+
+        // --- RESULT MODAL ---
+        const resultModal = document.getElementById('resultModal');
+        function showResult(prize, lose) {
+            const iconWrap = document.getElementById('resultIconWrap');
+            const icon = document.getElementById('resultIcon');
+            document.getElementById('resultPrize').textContent = prize.name;
+            if (lose) {
+                iconWrap.className = 'w-16 h-16 mx-auto rounded-full bg-[#ece9de] flex items-center justify-center mb-4';
+                icon.className = 'fa-solid fa-seedling text-3xl text-[#766c56]';
+                document.getElementById('resultLabel').textContent = 'NEXT TIME';
+                document.getElementById('resultTitle').textContent = '아쉬워요!';
+                document.getElementById('resultDesc').textContent = '다음 기회에 꼭 행운이 찾아올 거예요.';
+                sound.lose();
+            } else {
+                iconWrap.className = 'w-16 h-16 mx-auto rounded-full bg-[#8dc63f] flex items-center justify-center mb-4';
+                icon.className = 'fa-solid fa-gift text-3xl text-white';
+                document.getElementById('resultLabel').textContent = 'CONGRATULATIONS';
+                document.getElementById('resultTitle').textContent = '축하합니다!';
+                document.getElementById('resultDesc').textContent = '당첨되셨습니다. 담당자에게 화면을 보여주세요.';
+                sound.win();
+                launchConfetti();
+            }
+            resultModal.classList.remove('hidden');
+            const card = document.getElementById('resultCard');
+            card.classList.remove('pop-in');
+            void card.offsetWidth;
+            card.classList.add('pop-in');
+            document.getElementById('closeResultBtn').focus();
+        }
+        function closeResult() { resultModal.classList.add('hidden'); }
+
+        // --- CONFETTI ---
+        const confettiCanvas = document.getElementById('confettiCanvas');
+        const cctx = confettiCanvas.getContext('2d');
+        let confetti = [];
+        let confettiRunning = false;
+
+        function launchConfetti() {
+            const dpr = window.devicePixelRatio || 1;
+            confettiCanvas.width = innerWidth * dpr;
+            confettiCanvas.height = innerHeight * dpr;
+            cctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            const colors = ['#8dc63f', '#056130', '#f0c53d', '#4fb3a9', '#e8893a', '#a6ce39'];
+            for (let i = 0; i < 160; i++) {
+                confetti.push({
+                    x: innerWidth / 2 + (Math.random() - 0.5) * 120,
+                    y: innerHeight * 0.4,
+                    vx: (Math.random() - 0.5) * 14,
+                    vy: -Math.random() * 14 - 4,
+                    w: 6 + Math.random() * 6,
+                    h: 8 + Math.random() * 8,
+                    rot: Math.random() * Math.PI,
+                    vr: (Math.random() - 0.5) * 0.3,
+                    color: colors[i % colors.length],
+                    life: 1
+                });
+            }
+            if (!confettiRunning) { confettiRunning = true; requestAnimationFrame(stepConfetti); }
+        }
+
+        function stepConfetti() {
+            cctx.clearRect(0, 0, innerWidth, innerHeight);
+            for (let i = confetti.length - 1; i >= 0; i--) {
+                const p = confetti[i];
+                p.vy += 0.35;
+                p.vx *= 0.99;
+                p.x += p.vx;
+                p.y += p.vy;
+                p.rot += p.vr;
+                p.life -= 0.006;
+                if (p.y > innerHeight + 40 || p.life <= 0) { confetti.splice(i, 1); continue; }
+                cctx.save();
+                cctx.globalAlpha = Math.max(0, p.life);
+                cctx.translate(p.x, p.y);
+                cctx.rotate(p.rot);
+                cctx.fillStyle = p.color;
+                cctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.rot * 2)));
+                cctx.restore();
+            }
+            if (confetti.length) requestAnimationFrame(stepConfetti);
+            else { confettiRunning = false; cctx.clearRect(0, 0, innerWidth, innerHeight); }
+        }
+
+        // --- UI RENDERING ---
+        const prizeListEl = document.getElementById('prizeList');
+        const historyListEl = document.getElementById('historyList');
+
+        function renderPrizeList() {
+            prizeListEl.innerHTML = '';
+            prizes.forEach((p, idx) => {
+                const row = document.createElement('div');
+                row.className = 'grid grid-cols-[14px_1fr_64px_28px] gap-2 items-center';
+
+                const dot = document.createElement('span');
+                dot.className = 'w-3.5 h-3.5 rounded-full';
+                dot.style.background = p.color;
+                if (p.qty === 0) dot.style.opacity = '0.3';
+
+                const name = document.createElement('input');
+                name.type = 'text';
+                name.value = p.name;
+                name.maxLength = 30;
+                name.placeholder = '경품명';
+                name.className = 'pm-input w-full min-w-0';
+                name.disabled = spinning;
+                name.addEventListener('input', () => { p.name = name.value; save(); drawWheel(); updateTotal(); });
+
+                const qty = document.createElement('input');
+                qty.type = 'number';
+                qty.min = '0';
+                qty.max = '9999';
+                qty.value = p.qty;
+                qty.className = 'pm-input w-full text-center';
+                qty.disabled = spinning;
+                qty.addEventListener('input', () => {
+                    const v = Math.max(0, Math.min(9999, parseInt(qty.value, 10) || 0));
+                    p.qty = v;
+                    p.initial = v;
+                    dot.style.opacity = v === 0 ? '0.3' : '1';
+                    save(); drawWheel(); updateTotal();
+                });
+
+                const del = document.createElement('button');
+                del.className = 'w-7 h-7 rounded-full text-[#bec3b9] hover:text-[#d9534f] hover:bg-[#f7f5ee] flex items-center justify-center disabled:opacity-40';
+                del.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                del.setAttribute('aria-label', '경품 삭제');
+                del.disabled = spinning || prizes.length <= 1;
+                del.addEventListener('click', () => {
+                    prizes.splice(idx, 1);
+                    save(); renderPrizeList(); drawWheel();
+                });
+
+                row.append(dot, name, qty, del);
+                prizeListEl.appendChild(row);
+            });
+            updateTotal();
+        }
+
+        function updateTotal() {
+            document.getElementById('totalRemain').textContent = totalRemain().toLocaleString();
+            document.getElementById('spinBtn').disabled = spinning || totalRemain() === 0;
+        }
+
+        function renderHistory() {
+            historyListEl.innerHTML = '';
+            if (history.length === 0) {
+                const li = document.createElement('li');
+                li.className = 'text-xs text-[#999] text-center py-4';
+                li.textContent = '아직 당첨 기록이 없습니다.';
+                historyListEl.appendChild(li);
+                return;
+            }
+            history.forEach((h, i) => {
+                const li = document.createElement('li');
+                li.className = 'flex items-center gap-2 px-3 py-2 rounded-lg pm-well';
+                const no = document.createElement('span');
+                no.className = 'text-[11px] text-[#849c62] font-title font-extrabold w-6';
+                no.textContent = history.length - i;
+                const dot = document.createElement('span');
+                dot.className = 'w-2.5 h-2.5 rounded-full shrink-0';
+                dot.style.background = h.color;
+                const name = document.createElement('span');
+                name.className = 'flex-1 truncate ' + (h.lose ? 'text-[#999]' : 'text-[#333] font-medium');
+                name.textContent = h.name;
+                const time = document.createElement('span');
+                time.className = 'text-[11px] text-[#999]';
+                time.textContent = new Date(h.time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+                li.append(no, dot, name, time);
+                historyListEl.appendChild(li);
+            });
+        }
+
+        function setControlsDisabled(disabled) {
+            document.getElementById('spinBtn').disabled = disabled || totalRemain() === 0;
+            document.getElementById('hubBtn').disabled = disabled;
+            document.getElementById('addPrizeBtn').disabled = disabled;
+            document.getElementById('resetQtyBtn').disabled = disabled;
+            prizeListEl.querySelectorAll('input, button').forEach(el => { el.disabled = disabled; });
+            if (!disabled) renderPrizeList();
+        }
+
+        function setStatus(msg) { document.getElementById('statusText').textContent = msg; }
+
+        // --- EVENTS ---
+        document.getElementById('spinBtn').addEventListener('click', spin);
+        document.getElementById('hubBtn').addEventListener('click', spin);
+        document.getElementById('closeResultBtn').addEventListener('click', closeResult);
+        resultModal.addEventListener('click', (e) => { if (e.target === resultModal) closeResult(); });
+
+        document.getElementById('addPrizeBtn').addEventListener('click', () => {
+            prizes.push(makePrize('새 경품', 1, prizes.length));
+            save(); renderPrizeList(); drawWheel();
+            const inputs = prizeListEl.querySelectorAll('input[type=text]');
+            const last = inputs[inputs.length - 1];
+            if (last) { last.focus(); last.select(); }
+        });
+
+        document.getElementById('resetQtyBtn').addEventListener('click', () => {
+            if (!confirm('모든 경품 수량을 처음 설정값으로 되돌릴까요?')) return;
+            prizes.forEach(p => { p.qty = p.initial; });
+            save(); renderPrizeList(); drawWheel(); setStatus('');
+        });
+
+        document.getElementById('clearHistoryBtn').addEventListener('click', () => {
+            if (history.length === 0 || !confirm('당첨 기록을 모두 지울까요?')) return;
+            history = [];
+            save(); renderHistory();
+        });
+
+        document.getElementById('soundToggleBtn').addEventListener('click', () => {
+            sound.init();
+            sound.enabled = !sound.enabled;
+            document.getElementById('soundIcon').className = sound.enabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark';
+            document.getElementById('soundText').textContent = sound.enabled ? '효과음 ON' : '효과음 OFF';
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT') return;
+            if (!resultModal.classList.contains('hidden')) {
+                if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); closeResult(); }
+                return;
+            }
+            if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); spin(); }
+        });
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // --- INIT ---
+        load();
+        renderPrizeList();
+        renderHistory();
+        resizeCanvas();
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawWheel);
+    </script>
+<script src="https://chatbot.aiconvergencelab.com/widget.js" data-slug="bot-da8e7df5" data-title="동수봇" defer></script>
+</body>
+</html>
