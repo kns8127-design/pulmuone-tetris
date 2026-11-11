@@ -9,7 +9,7 @@
 
 ## 배포 (Vercel)
 
-`main` 브랜치에 푸시하면 Vercel 프로젝트 `event`(Root Directory: `event`)가 자동으로 배포합니다.
+Vercel 프로젝트 `event`는 GitHub 저장소 `kns8127-design/event`(이 폴더의 내용이 저장소 루트에 있음)와 연결되어 있습니다. 그 저장소의 `main` 브랜치에 푸시하면 자동으로 배포됩니다.
 
 | 환경변수 | 내용 |
 |---|---|
