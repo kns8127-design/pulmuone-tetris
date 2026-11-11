@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>행사장 스크린</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/moonspam/NanumSquare@2.0/nanumsquare.css" rel="stylesheet">
+<link rel="stylesheet" href="/common.css">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  body { background: var(--pm-cream-light); cursor: default; user-select: none; }
+  .stage { position: fixed; inset: 0; display: flex; flex-direction: column; }
+  .s-top { display: flex; align-items: center; justify-content: space-between; padding: 2vh 3vw; }
+  .s-top .pm-logo { font-size: 1.6vw; }
+  .s-top .pm-logo .leaf { width: 2.2vw; height: 2.2vw; }
+  .s-stat { font-size: 1.3vw; color: var(--pm-olive); font-weight: 700; }
+  .s-stat b { color: var(--pm-deep); font-size: 1.8vw; font-family: 'NanumSquare', sans-serif; }
+  .s-body { flex: 1; display: flex; align-items: center; justify-content: center; padding: 0 4vw 4vh; position: relative; }
+  .deco { position: fixed; border-radius: 50%; pointer-events: none; z-index: -1; }
+  .deco.a { width: 40vw; height: 40vw; left: -12vw; top: -14vw; background: rgba(141, 198, 63, .14); }
+  .deco.b { width: 50vw; height: 50vw; right: -18vw; bottom: -24vw; background: rgba(5, 97, 48, .07); }
+  .view { width: 100%; animation: vin .5s ease; }
+  @keyframes vin { from { opacity: 0; transform: scale(.98); } }
+  h1.big { font-size: 4.2vw; color: var(--pm-deep); margin: 0; letter-spacing: -.02em; line-height: 1.2; }
+  .sub { font-size: 1.6vw; color: var(--pm-olive); margin-top: 1vh; }
+  .split { display: grid; grid-template-columns: 1.2fr 1fr; gap: 4vw; align-items: center; }
+  .qr-card { background: #fff; border-radius: 2vw; padding: 2.4vw; box-shadow: 0 1.5vw 4vw rgba(68, 76, 56, .12); text-align: center; border: .3vw solid var(--pm-green); }
+  .qr-card .qr { display: inline-block; padding: .6vw; background: #fff; }
+  .qr-card .qr img, .qr-card .qr canvas { width: 22vw !important; height: 22vw !important; }
+  .qr-card .url { font-size: 1.1vw; color: var(--pm-sage); margin-top: 1vh; word-break: break-all; }
+  .code { font-family: 'NanumSquare', sans-serif; font-weight: 900; font-size: 3vw; letter-spacing: .3em; color: var(--pm-deep); background: #e6f3d3; border-radius: 1vw; padding: .6vh 1.6vw; display: inline-block; margin-top: 1vh; }
+  .count-big { font-family: 'NanumSquare', sans-serif; font-weight: 900; font-size: 7vw; color: var(--pm-green-dark); line-height: 1; }
+  /* 럭키드로우 */
+  .prizes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2vw; margin-top: 4vh; }
+  .prize { background: #fff; border-radius: 1.6vw; padding: 2vw; text-align: center; box-shadow: var(--shadow); border: 1px solid var(--pm-cream); }
+  .prize .rk { font-family: 'NanumSquare', sans-serif; font-weight: 900; font-size: 2.6vw; }
+  .prize img { width: 100%; height: 14vw; object-fit: contain; margin: 1vh 0; }
+  .prize .ph { height: 14vw; display: grid; place-items: center; font-size: 6vw; }
+  .prize .nm { font-weight: 700; font-size: 1.5vw; }
+  .slot-wrap { text-align: center; }
+  .slot { margin: 4vh auto 0; width: 60vw; height: 16vw; border-radius: 2vw; background: #fff; border: .5vw solid var(--pm-green); overflow: hidden; position: relative; box-shadow: 0 2vw 5vw rgba(5, 97, 48, .18); }
+  .slot::before, .slot::after { content: ''; position: absolute; left: 0; right: 0; height: 4vw; z-index: 2; }
+  .slot::before { top: 0; background: linear-gradient(#fff, transparent); }
+  .slot::after { bottom: 0; background: linear-gradient(transparent, #fff); }
+  .slot-name { position: absolute; inset: 0; display: grid; place-items: center; font-family: 'NanumSquare', sans-serif; font-weight: 900; font-size: 7vw; color: var(--pm-deep); }
+  /* 팝업 */
+  .popup-bg { position: fixed; inset: 0; background: rgba(5, 40, 20, .55); display: grid; place-items: center; z-index: 50; animation: fade .3s; }
+  @keyframes fade { from { opacity: 0; } }
+  .popup { background: #fff; border-radius: 3vw; padding: 3vw 4vw; width: 70vw; max-height: 90vh; text-align: center; position: relative; box-shadow: 0 3vw 8vw rgba(0, 0, 0, .3); animation: pop .6s cubic-bezier(.2, 1.6, .4, 1); border: .5vw solid var(--pm-green); overflow: hidden; }
+  @keyframes pop { from { transform: scale(.4); opacity: 0; } }
+  .popup .congrats { font-family: 'NanumSquare', sans-serif; font-weight: 900; font-size: 4vw; color: var(--pm-deep); }
+  .popup .rank-tag { display: inline-block; font-family: 'NanumSquare', sans-serif; font-weight: 900; font-size: 2.6vw; color: #fff; background: var(--pm-green); border-radius: 999px; padding: .4vh 2.4vw; margin: 1.4vh 0; }
+  .popup .rank-tag.r1 { background: linear-gradient(135deg, #e8b21f, #c99000); }
+  .popup .rank-tag.r2 { background: linear-gradient(135deg, #a8b1bb, #7b858f); }
+  .popup .rank-tag.r3 { background: linear-gradient(135deg, #d38b4f, #a5622c); }
+  .popup .content { display: flex; align-items: center; justify-content: center; gap: 3vw; }
+  .popup .pimg { width: 18vw; height: 18vw; object-fit: contain; border-radius: 1.4vw; background: var(--pm-cream-light); }
+  .popup .winners { font-family: 'NanumSquare', sans-serif; font-weight: 900; color: var(--pm-text); }
+  .popup .winner { font-size: 5vw; line-height: 1.15; }
+  .popup .winner small { display: block; font-size: 1.6vw; color: var(--pm-sage); font-weight: 700; }
+  .popup .winners.many .winner { font-size: 2.6vw; display: inline-block; margin: .6vh 1.2vw; }
+  .popup .winners.many .winner small { font-size: 1.1vw; }
+  .popup .prize-name { font-size: 2vw; font-weight: 700; color: var(--pm-olive); margin-top: 1.4vh; }
+  .popup .shine { position: absolute; inset: -50%; background: conic-gradient(from 0deg, transparent 0 20deg, rgba(141, 198, 63, .12) 20deg 40deg, transparent 40deg 60deg, rgba(141, 198, 63, .12) 60deg 80deg, transparent 80deg); animation: rot 12s linear infinite; z-index: -1; }
+  @keyframes rot { to { transform: rotate(360deg); } }
+  .popup .mascot-corner { position: absolute; right: 1.5vw; bottom: 1vw; }
+  /* 퀴즈 */
+  .countdown { font-family: 'NanumSquare', sans-serif; font-weight: 900; font-size: 16vw; color: var(--pm-deep); line-height: 1; font-variant-numeric: tabular-nums; }
+  .countdown.hurry { color: var(--pm-red); animation: pulse .5s infinite alternate; }
+  @keyframes pulse { to { transform: scale(1.06); } }
+  .progress { height: 2.2vh; background: var(--pm-cream); border-radius: 99px; overflow: hidden; width: 60vw; margin: 3vh auto 1vh; }
+  .progress i { display: block; height: 100%; background: linear-gradient(90deg, var(--pm-green), var(--pm-lime)); transition: width .5s; }
+  /* 결과 */
+  .podium { display: flex; justify-content: center; align-items: flex-end; gap: 2vw; margin-top: 3vh; flex-wrap: wrap; }
+  .pcard { background: #fff; border-radius: 1.6vw; padding: 2vw 2.4vw; min-width: 18vw; text-align: center; box-shadow: var(--shadow); border: .3vw solid var(--pm-cream); opacity: 0; transform: translateY(4vh) scale(.9); transition: all .7s cubic-bezier(.2, 1.4, .4, 1); }
+  .pcard.show { opacity: 1; transform: none; }
+  .pcard.first { border-color: var(--pm-gold); min-width: 24vw; padding: 3vw; }
+  .pcard .medal { font-size: 4vw; }
+  .pcard .nm { font-family: 'NanumSquare', sans-serif; font-weight: 900; font-size: 2.8vw; color: var(--pm-deep); }
+  .pcard.first .nm { font-size: 3.8vw; }
+  .pcard .org { font-size: 1.2vw; color: var(--pm-sage); font-weight: 700; }
+  .pcard .meta { font-size: 1.3vw; margin-top: 1vh; color: var(--pm-olive); }
+  .toplist { margin: 3vh auto 0; width: 70vw; font-size: 1.3vw; opacity: 0; transition: opacity 1s; }
+  .toplist.show { opacity: 1; }
+  .toplist td, .toplist th { padding: .8vh 1vw; }
+  /* 시작 오버레이 */
+  #start { position: fixed; inset: 0; z-index: 100; background: rgba(247, 245, 238, .96); display: grid; place-items: center; text-align: center; cursor: pointer; }
+  #start h2 { font-size: 2.6vw; color: var(--pm-deep); }
+  .tools { position: fixed; right: 1vw; bottom: 1vh; opacity: 0; transition: opacity .3s; z-index: 60; display: flex; gap: 6px; }
+  body:hover .tools { opacity: .8; }
+  .offline { position: fixed; left: 50%; top: 1vh; transform: translateX(-50%); background: var(--pm-red); color: #fff; padding: .5vh 1.4vw; border-radius: 999px; font-size: 1vw; z-index: 70; }
+</style>
+</head>
+<body>
+<div class="deco a"></div><div class="deco b"></div>
+<div class="stage">
+  <div class="s-top">
+    <div class="pm-logo"><span id="leaf"></span><span id="ev">풀무원 컨퍼런스</span></div>
+    <div class="s-stat">체크인 <b id="st-ci">0</b>명</div>
+  </div>
+  <div class="s-body" id="body"></div>
+</div>
+<div id="popup"></div>
+<div id="start">
+  <div>
+    <img class="mascot bob" src="/assets/mascot" alt="두식이" width="220" height="220" style="margin:0 auto">
+    <h2>화면을 클릭하면 시작합니다</h2>
+    <p class="muted">사운드 재생과 전체 화면을 위해 한 번 클릭해 주세요.</p>
+  </div>
+</div>
+<div class="tools"><button class="btn btn-sm" id="fs">⛶ 전체 화면</button></div>
+<div class="offline hidden" id="offline">서버 연결 끊김 — 재연결 중…</div>
+<script src="/common.js"></script>
+<script>
+(function () {
+  const key = new URLSearchParams(location.search).get('key') || '';
+  const body = PM.$('#body'); const popup = PM.$('#popup');
+  const snd = PM.sound;
+  PM.$('#leaf').innerHTML = PM.leaf;
+  let st = null; let viewKey = ''; let shownDrawSeq = null; let spinTimer = null; let revealAt = null; let lastBeep = null; let closedSoundDone = false;
+
+  PM.$('#start').onclick = () => {
+    snd.unlock();
+    PM.$('#start').remove();
+    if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
+    if (st) syncSound();
+  };
+  // 키오스크용: ?autostart=1 이면 오버레이 없이 바로 표시 (사운드는 화면을 한 번 클릭하면 켜짐)
+  if (new URLSearchParams(location.search).get('autostart') === '1') {
+    PM.$('#start').remove();
+    document.addEventListener('click', () => { if (!snd.ready) { snd.unlock(); if (st) syncSound(); } });
+  }
+  PM.$('#fs').onclick =() => { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); };
+
+  const base = () => (st && st.publicUrl) || location.origin;
+  const medal = (r) => ({ 1: '🥇', 2: '🥈', 3: '🥉' }[r] || '🏅');
+
+  function syncSound() {
+    snd.setVolume(st.sound.volume); snd.sfxOn = st.sound.sfx;
+    const want = st.sound.bgm && st.quiz.state === 'RUNNING' && st.view === 'quiz';
+    if (want) snd.startBgm(); else snd.stopBgm();
+  }
+
+  function apply(d) {
+    st = d;
+    PM.$('#ev').textContent = d.eventName; document.title = d.eventName + ' — 스크린';
+    PM.$('#st-ci').textContent = d.stats.checkedIn;
+    syncSound();
+    const key2 = d.view + ':' + (d.view === 'quiz' ? d.quiz.state : '') + (d.view === 'results' ? (d.reveal ? d.reveal.at : 'none') : '');
+    if (key2 !== viewKey) { viewKey = key2; render(); } else update();
+    handleDraw();
+  }
+
+  function render() {
+    clearInterval(spinTimer); spinTimer = null;
+    const v = st.view;
+    if (v === 'home') {
+      const url = base() + '/checkin' + (st.checkin.code ? '?code=' + encodeURIComponent(st.checkin.code) : '');
+      body.innerHTML = `<div class="view split">
+        <div>${PM.mascot(260, 'bob')}<h1 class="big" style="margin-top:2vh">QR코드로<br>현장 체크인 하세요!</h1>
+          <div class="sub">체크인을 완료한 분만 <b class="deep">럭키드로우</b>에 참여할 수 있어요.</div>
+          <div style="margin-top:4vh" class="sub">현재 체크인</div><div class="count-big" id="ci-big">${st.stats.checkedIn}<span style="font-size:2.4vw">명</span></div></div>
+        <div class="qr-card"><div class="pm-label" style="font-size:1.1vw">CHECK-IN</div><div class="qr" id="qr"></div>
+          <div class="url">${PM.esc(base() + '/checkin')}</div>
+          ${st.checkin.codeRequired ? (st.checkin.code ? `<div class="sub" style="margin-top:2vh">현장 인증 코드</div><div class="code">${PM.esc(st.checkin.code)}</div>` : '<div class="muted" style="margin-top:1vh">⚠ 스크린 키가 없어 인증 코드를 표시할 수 없습니다</div>') : ''}
+        </div></div>`;
+      PM.qr(PM.$('#qr'), url, 320);
+    } else if (v === 'draw') {
+      body.innerHTML = `<div class="view center"><div class="pm-label" style="font-size:1.2vw">LUCKY DRAW</div>
+        <h1 class="big">두식이의 럭키드로우 🎁</h1>
+        <div id="draw-area"><div class="prizes">${st.prizes.map((p) => `<div class="prize">
+          <div class="rk rank-${p.rank}">${medal(p.rank)} ${p.rank}등</div>
+          ${p.prize_image_url ? `<img src="${PM.esc(p.prize_image_url)}" alt="">` : `<div class="ph">🎁</div>`}
+          <div class="nm">${PM.esc(p.prize_name)}</div><div class="muted">${p.winner_count}명</div></div>`).join('')}</div></div></div>`;
+    } else if (v === 'quiz') {
+      const q = st.quiz;
+      if (q.state === 'IDLE' || q.state === 'OPEN') {
+        body.innerHTML = `<div class="view split">
+          <div>${PM.mascot(240, 'jump')}<div class="pm-label" style="font-size:1.2vw;margin-top:2vh">LIVE QUIZ</div>
+            <h1 class="big">${PM.esc(q.title)}</h1>
+            <div class="sub">총 ${q.count}문제 · 만점자 중 가장 빠른 <b class="deep">${q.winnerCount}명</b> 수상!</div>
+            <div style="margin-top:4vh" class="sub">${q.state === 'OPEN' ? '대기실 입장' : '대기실 준비 중'}</div>
+            <div class="count-big" id="joined">${st.stats.quizJoined}<span style="font-size:2.4vw">명</span></div></div>
+          <div class="qr-card"><div class="pm-label" style="font-size:1.1vw">QUIZ</div><div class="qr" id="qr"></div>
+            <div class="url">${PM.esc(base() + '/quiz')}</div><div class="sub">스마트폰으로 스캔해 입장하세요</div></div></div>`;
+        PM.qr(PM.$('#qr'), base() + '/quiz', 320);
+      } else if (q.state === 'RUNNING') {
+        closedSoundDone = false;
+        body.innerHTML = `<div class="view center"><div class="pm-label" style="font-size:1.2vw">LIVE QUIZ · ${PM.esc(q.title)}</div>
+          <div class="sub" style="margin:1vh 0">남은 시간</div>
+          <div class="countdown" id="cd">--</div>
+          <div class="progress"><i id="prog" style="width:0%"></i></div>
+          <div class="sub"><b class="deep" id="fin">0</b> / <span id="jn">0</span>명 제출 완료</div></div>`;
+        update();
+      } else {
+        if (!closedSoundDone) { closedSoundDone = true; snd.beep(true); }
+        body.innerHTML = `<div class="view center">${PM.mascot(240, 'jump')}<h1 class="big" style="margin-top:2vh">퀴즈 종료!</h1>
+          <div class="sub">채점이 완료되었습니다. 결과 발표를 기다려 주세요 🥁</div>
+          <div class="sub" style="margin-top:2vh">참여 <b class="deep">${st.stats.quizJoined}</b>명</div></div>`;
+      }
+    } else if (v === 'results') {
+      if (!st.reveal) {
+        body.innerHTML = `<div class="view center">${PM.mascot(220, 'bob')}<h1 class="big">결과 발표 준비 중</h1></div>`;
+        return;
+      }
+      renderReveal();
+    }
+  }
+
+  function update() {
+    if (!st) return;
+    const ci = PM.$('#ci-big'); if (ci) ci.innerHTML = st.stats.checkedIn + '<span style="font-size:2.4vw">명</span>';
+    const jn = PM.$('#joined'); if (jn) jn.innerHTML = st.stats.quizJoined + '<span style="font-size:2.4vw">명</span>';
+    const fin = PM.$('#fin'); if (fin) { fin.textContent = st.stats.quizFinished; PM.$('#jn').textContent = st.stats.quizJoined; PM.$('#prog').style.width = (st.stats.quizJoined ? st.stats.quizFinished / st.stats.quizJoined * 100 : 0) + '%'; }
+  }
+
+  // 퀴즈 카운트다운
+  setInterval(() => {
+    const cd = PM.$('#cd'); if (!cd || !st || !st.quiz.deadline) return;
+    const left = Math.max(0, st.quiz.deadline - PM.serverNow());
+    const s = Math.ceil(left / 1000);
+    cd.textContent = s >= 60 ? Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') : s;
+    cd.classList.toggle('hurry', s <= 10);
+    const total = st.quiz.deadline - st.quiz.started_at;
+    snd.intensity = Math.min(1, 1 - left / total);
+    if (s <= 10 && s > 0 && s !== lastBeep) { lastBeep = s; snd.beep(false); }
+  }, 200);
+
+  /* ── 럭키드로우 연출 ── */
+  function handleDraw() {
+    const d = st.draw;
+    if (!d || !d.open) { if (popup.innerHTML) popup.innerHTML = ''; shownDrawSeq = d ? d.seq : shownDrawSeq; return; }
+    if (d.seq === shownDrawSeq) return;
+    shownDrawSeq = d.seq;
+    const age = PM.serverNow() - d.at;
+    if (age > 6000 || st.view !== 'draw') { showPopup(d); return; } // 새로고침 시 바로 결과
+    spin(d);
+  }
+  function spin(d) {
+    const area = PM.$('#draw-area'); if (!area) return showPopup(d);
+    const pool = d.pool.length ? d.pool : d.winners.map((w) => w.name);
+    area.innerHTML = `<div class="slot-wrap"><div class="sub" style="margin-top:2vh">${medal(d.rank)} <b>${d.rank}등</b> · ${PM.esc(d.prize_name)} 추첨 중…</div>
+      <div class="slot"><div class="slot-name" id="slot">?</div></div></div>`;
+    snd.drumroll(4.2);
+    const slot = PM.$('#slot'); const t0 = performance.now(); const dur = 4300;
+    let i = 0;
+    (function step() {
+      const t = performance.now() - t0;
+      if (t >= dur) { slot.textContent = d.winners[0].name; setTimeout(() => showPopup(d), 400); return; }
+      slot.textContent = pool[i++ % pool.length]; snd.tick();
+      const delay = 50 + Math.pow(t / dur, 3) * 380; // 점점 느려짐
+      spinTimer = setTimeout(step, delay);
+    })();
+  }
+  function showPopup(d) {
+    clearTimeout(spinTimer);
+    const many = d.winners.length > 1;
+    popup.innerHTML = `<div class="popup-bg"><div class="popup"><div class="shine"></div>
+      <div class="congrats">🎉 축하합니다! 🎉</div>
+      <div class="rank-tag r${d.rank}">${medal(d.rank)} ${d.rank}등</div>
+      <div class="content">
+        ${d.prize_image_url ? `<img class="pimg" src="${PM.esc(d.prize_image_url)}" alt="">` : ''}
+        <div><div class="winners ${many ? 'many' : ''}">${d.winners.map((w) => `<div class="winner">${PM.esc(w.name)} 님<small>${PM.esc(w.organization || '')}</small></div>`).join('')}</div>
+          <div class="prize-name">🎁 ${PM.esc(d.prize_name)}</div></div>
+      </div>
+      <div class="mascot-corner">${PM.mascot(110, 'jump')}</div>
+    </div></div>`;
+    snd.fanfare(); PM.confetti(true);
+    if (st.view === 'draw') setTimeout(() => { if (st.view === 'draw' && viewKey.startsWith('draw')) render(); }, 300);
+  }
+
+  /* ── 퀴즈 결과 발표 ── */
+  function renderReveal() {
+    const r = st.reveal;
+    const ws = r.winners.slice();
+    const order = ws.length >= 3 ? [ws[1], ws[0], ws[2], ...ws.slice(3)] : ws.length === 2 ? [ws[1], ws[0]] : ws;
+    body.innerHTML = `<div class="view center"><div class="pm-label" style="font-size:1.2vw">QUIZ RESULT</div>
+      <h1 class="big">🏆 퀴즈 수상자 발표</h1>
+      <div class="sub">참여 ${r.participants}명 · 만점자 ${r.perfectCount}명</div>
+      ${ws.length ? `<div class="podium">${order.map((w) => `<div class="pcard ${w.award_rank === 1 ? 'first' : ''}" data-r="${w.award_rank}">
+        <div class="medal">${medal(w.award_rank)}</div><div class="nm">${PM.esc(w.name)}</div><div class="org">${PM.esc(w.organization || '')}</div>
+        <div class="meta">${w.correct}/${w.total} 정답 · ${PM.sec(w.elapsed_ms)}</div></div>`).join('')}</div>`
+        : `<div style="margin-top:3vh">${PM.mascot(180, 'bob')}<div class="sub">아쉽게도 만점자가 없어요! 전체 순위를 확인해 주세요.</div></div>`}
+      <table class="pm-table toplist" id="toplist"><thead><tr><th>순위</th><th>이름</th><th>소속</th><th>정답</th><th>풀이 시간</th></tr></thead>
+      <tbody>${r.top.map((x) => `<tr><td><b>${x.rank}</b></td><td>${PM.esc(x.name)}</td><td>${PM.esc(x.organization || '')}</td><td>${x.correct}/${x.total}</td><td>${PM.sec(x.elapsed_ms)}</td></tr>`).join('')}</tbody></table></div>`;
+    // 낮은 순위부터 차례로 공개
+    const cards = PM.$$('.pcard').sort((a, b) => Number(b.dataset.r) - Number(a.dataset.r));
+    if (cards.length) snd.drumroll(1.5);
+    cards.forEach((c, i) => setTimeout(() => {
+      c.classList.add('show');
+      if (Number(c.dataset.r) === 1) { snd.fanfare(); PM.confetti(true); } else snd.success();
+    }, 1600 + i * 1800));
+    setTimeout(() => { const t = PM.$('#toplist'); if (t) t.classList.add('show'); }, ws.length ? 1600 + cards.length * 1800 + 1500 : 800);
+  }
+
+  PM.stream('/api/stream?role=screen&key=' + encodeURIComponent(key), apply, (on) => PM.$('#offline').classList.toggle('hidden', on));
+})();
+</script>
+</body>
+</html>

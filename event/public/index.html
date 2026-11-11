@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>풀무원 컨퍼런스 이벤트</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/moonspam/NanumSquare@2.0/nanumsquare.css" rel="stylesheet">
+<link rel="stylesheet" href="/common.css">
+<style>
+  .hero { text-align: center; padding: 30px 0 10px; }
+  .hero h1 { font-size: 26px; color: var(--pm-deep); margin: 14px 0 6px; }
+  .menu { display: grid; gap: 12px; margin-top: 22px; }
+  .menu a { display: flex; align-items: center; gap: 14px; padding: 18px; background: #fff; border: 1px solid var(--pm-cream); border-radius: 16px; text-decoration: none; color: var(--pm-text); box-shadow: var(--shadow); transition: transform .15s, border .15s; }
+  .menu a:hover { transform: translateY(-2px); border-color: var(--pm-green); }
+  .menu .ic { width: 46px; height: 46px; border-radius: 14px; background: #e6f3d3; display: grid; place-items: center; font-size: 22px; flex: none; }
+  .menu b { display: block; font-size: 16px; color: var(--pm-deep); }
+  .staff { margin-top: 26px; display: flex; gap: 8px; justify-content: center; }
+</style>
+</head>
+<body class="pm-bg-leaves">
+<div class="mobile-wrap">
+  <div class="hero">
+    <img class="mascot bob" src="/assets/mascot" alt="두식이" width="150" height="150" style="margin:0 auto">
+    <h1 id="ev">풀무원 컨퍼런스</h1>
+    <div class="muted">두식이와 함께하는 럭키드로우 & 실시간 퀴즈</div>
+  </div>
+  <div class="menu">
+    <a href="/checkin"><span class="ic">✅</span><span><b>현장 체크인</b><span class="muted">체크인하면 럭키드로우 대상자가 돼요</span></span></a>
+    <a href="/quiz"><span class="ic">❓</span><span><b>실시간 퀴즈 참여</b><span class="muted">만점 + 빠른 순서로 수상!</span></span></a>
+  </div>
+  <div class="staff">
+    <a class="btn btn-sm" href="/admin">운영자</a>
+  </div>
+</div>
+<script src="/common.js"></script>
+<script>
+  PM.api('/api/public/info').then((d) => { PM.$('#ev').textContent = d.eventName; document.title = d.eventName; }).catch(() => {});
+</script>
+</body>
+</html>

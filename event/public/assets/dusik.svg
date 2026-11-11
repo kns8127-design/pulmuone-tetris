@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- 두식이 (임시 일러스트 — 공식 캐릭터 이미지를 assets/dusik.png 로 넣으면 자동 교체됩니다) -->
+  <defs>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f3efe1"/>
+    </linearGradient>
+    <linearGradient id="side" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#e9e3cf"/>
+      <stop offset="1" stop-color="#ddd5bc"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="100" cy="186" rx="58" ry="8" fill="#444c38" opacity=".12"/>
+  <!-- 새싹 -->
+  <path d="M100 52 C100 40 101 32 103 24" stroke="#68a12a" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M103 26 C112 10 132 8 142 14 C134 28 118 34 103 26 Z" fill="#8dc63f"/>
+  <path d="M101 30 C92 16 74 14 64 20 C72 33 88 37 101 30 Z" fill="#a6ce39"/>
+  <path d="M106 25 C116 19 126 16 136 15" stroke="#68a12a" stroke-width="1.6" fill="none" opacity=".6"/>
+  <!-- 팔 -->
+  <ellipse cx="38" cy="122" rx="12" ry="18" fill="#f3efe1" stroke="#cfc7ad" stroke-width="2.5" transform="rotate(25 38 122)"/>
+  <ellipse cx="162" cy="122" rx="12" ry="18" fill="#f3efe1" stroke="#cfc7ad" stroke-width="2.5" transform="rotate(-25 162 122)"/>
+  <!-- 다리 -->
+  <rect x="68" y="166" width="20" height="16" rx="8" fill="#f3efe1" stroke="#cfc7ad" stroke-width="2.5"/>
+  <rect x="112" y="166" width="20" height="16" rx="8" fill="#f3efe1" stroke="#cfc7ad" stroke-width="2.5"/>
+  <!-- 두부 몸통 -->
+  <rect x="44" y="52" width="112" height="120" rx="26" fill="url(#body)" stroke="#cfc7ad" stroke-width="3"/>
+  <rect x="140" y="62" width="10" height="100" rx="5" fill="url(#side)" opacity=".5"/>
+  <!-- 두부 결 -->
+  <circle cx="64" cy="70" r="2" fill="#e2dbc4"/><circle cx="132" cy="150" r="2.4" fill="#e2dbc4"/><circle cx="72" cy="152" r="1.6" fill="#e2dbc4"/>
+  <!-- 눈 -->
+  <ellipse cx="80" cy="104" rx="8" ry="10" fill="#2f3326"/>
+  <ellipse cx="120" cy="104" rx="8" ry="10" fill="#2f3326"/>
+  <circle cx="83" cy="100" r="3" fill="#fff"/><circle cx="123" cy="100" r="3" fill="#fff"/>
+  <!-- 볼 -->
+  <ellipse cx="66" cy="124" rx="10" ry="6" fill="#f4a7a0" opacity=".7"/>
+  <ellipse cx="134" cy="124" rx="10" ry="6" fill="#f4a7a0" opacity=".7"/>
+  <!-- 입 -->
+  <path d="M88 124 Q100 138 112 124" stroke="#2f3326" stroke-width="4" fill="#e66a5c" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- 풀무원 리본 -->
+  <path d="M44 146 H156 V158 Q156 172 140 172 H60 Q44 172 44 158 Z" fill="#8dc63f" opacity=".9"/>
+  <text x="100" y="166" text-anchor="middle" font-family="NanumSquare, Noto Sans KR, sans-serif" font-size="11" font-weight="900" fill="#fff" letter-spacing="1">PULMUONE</text>
+</svg>

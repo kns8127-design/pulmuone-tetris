@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>실시간 퀴즈</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/moonspam/NanumSquare@2.0/nanumsquare.css" rel="stylesheet">
+<link rel="stylesheet" href="/common.css">
+<style>
+  body { user-select: none; -webkit-user-select: none; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+  .who { font-size: 13px; color: var(--pm-olive); font-weight: 700; }
+  .conn { width: 8px; height: 8px; border-radius: 50%; background: #ccc; display: inline-block; margin-right: 6px; }
+  .conn.on { background: var(--pm-green); }
+  .view { animation: fadeIn .3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } }
+  .lobby { text-align: center; padding-top: 10px; }
+  .lobby h2 { color: var(--pm-deep); margin: 16px 0 6px; }
+  .dots span { display: inline-block; width: 10px; height: 10px; margin: 0 4px; background: var(--pm-green); border-radius: 50%; animation: dot 1.2s infinite; }
+  .dots span:nth-child(2) { animation-delay: .2s; } .dots span:nth-child(3) { animation-delay: .4s; }
+  @keyframes dot { 0%, 100% { opacity: .25; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.1); } }
+  .qhead { display: flex; justify-content: space-between; align-items: baseline; }
+  .qnum { font-family: 'NanumSquare', sans-serif; font-weight: 900; color: var(--pm-green-dark); font-size: 15px; }
+  .timer { font-family: 'NanumSquare', sans-serif; font-weight: 900; font-size: 26px; color: var(--pm-deep); font-variant-numeric: tabular-nums; }
+  .timer.hurry { color: var(--pm-red); animation: pulse .5s infinite alternate; }
+  @keyframes pulse { to { transform: scale(1.12); } }
+  .bar { height: 8px; background: var(--pm-cream); border-radius: 99px; overflow: hidden; margin: 8px 0 18px; }
+  .bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--pm-green), var(--pm-lime)); border-radius: 99px; transition: width .2s linear; }
+  .bar.hurry > i { background: var(--pm-red); }
+  .qtext { font-size: 20px; font-weight: 700; line-height: 1.5; margin: 0 0 18px; word-break: keep-all; }
+  .opts { display: grid; gap: 10px; }
+  .opt { display: flex; align-items: center; gap: 12px; padding: 16px; background: #fff; border: 2px solid var(--pm-cream); border-radius: 14px; font-size: 16px; font-weight: 500; text-align: left; cursor: pointer; transition: all .15s; color: var(--pm-text); width: 100%; }
+  .opt .l { width: 34px; height: 34px; border-radius: 10px; background: var(--pm-cream-light); color: var(--pm-olive); display: grid; place-items: center; font-weight: 900; flex: none; font-family: 'NanumSquare', sans-serif; }
+  .opt.sel { border-color: var(--pm-green); background: #f3f9ea; }
+  .opt.sel .l { background: var(--pm-green); color: #fff; }
+  .opt:disabled { cursor: default; }
+  .submit-row { margin-top: 18px; }
+  .big-num { font-family: 'NanumSquare', sans-serif; font-size: 56px; font-weight: 900; color: var(--pm-deep); line-height: 1; }
+  .award { display: inline-block; margin-top: 10px; padding: 8px 18px; border-radius: 999px; background: var(--pm-deep); color: #fff; font-weight: 900; font-size: 18px; }
+  .rv { text-align: left; margin-top: 18px; }
+  .rv-item { padding: 12px; border-radius: 12px; background: #fff; border: 1px solid var(--pm-cream); margin-bottom: 8px; font-size: 14px; }
+  .rv-item .ok { color: var(--pm-deep); font-weight: 700; } .rv-item .ng { color: var(--pm-red); font-weight: 700; }
+  .sound-btn { font-size: 12px; }
+</style>
+</head>
+<body class="pm-bg-leaves">
+<div class="mobile-wrap">
+  <div class="topbar">
+    <div class="who"><span class="conn" id="conn"></span><span id="who">연결 중…</span></div>
+    <button class="btn btn-sm sound-btn" id="sound">🔇 사운드 켜기</button>
+  </div>
+  <main id="main"><div class="center muted" style="padding:60px 0"><span class="spin">🌱</span> 불러오는 중…</div></main>
+</div>
+<script src="/common.js"></script>
+<script>
+(function () {
+  const KEY = 'pm_token';
+  const tk = localStorage.getItem(KEY);
+  if (!tk) { location.replace('/checkin?next=quiz'); return; }
+  const main = PM.$('#main');
+  let st = null; let viewKey = ''; let selected = null; let submitting = false; let lastTickSec = null; let joining = false;
+  const snd = PM.sound;
+
+  PM.$('#sound').onclick = () => {
+    if (snd.ready) { snd.sfxOn = !snd.sfxOn; } else { snd.unlock(); snd.sfxOn = true; }
+    PM.$('#sound').textContent = snd.sfxOn && snd.ready !== false ? '🔊 사운드 켜짐' : '🔇 사운드 꺼짐';
+    snd.click();
+  };
+
+  function apply(d) {
+    st = d;
+    PM.$('#who').textContent = d.me.name + (d.me.organization ? ' · ' + d.me.organization : '');
+    const q = d.quiz; const me = d.me;
+    if (!me.joined && ['OPEN', 'RUNNING'].includes(q.state) && !joining) {
+      joining = true;
+      PM.api('/api/quiz/join', { token: tk }).then(apply).catch((e) => PM.toast(e.message, 'error')).finally(() => { joining = false; });
+    }
+    let key;
+    if (!me.joined) key = 'notjoined:' + q.state;
+    else if (q.state === 'OPEN') key = 'lobby';
+    else if (q.state === 'RUNNING' && me.question) key = 'q:' + me.question.index;
+    else if (q.state === 'RUNNING') key = 'finished';
+    else if (q.state === 'CLOSED') key = 'closed';
+    else if (q.state === 'REVEALED') key = 'revealed';
+    else key = 'idle';
+    if (key !== viewKey) { viewKey = key; selected = null; render(); }
+  }
+
+  function render() {
+    const q = st.quiz; const me = st.me;
+    if (viewKey.startsWith('notjoined')) {
+      const msg = q.state === 'IDLE' ? ['퀴즈 대기실이 아직 열리지 않았어요', '운영자가 대기실을 열면 자동으로 입장합니다.']
+        : q.state === 'OPEN' || q.state === 'RUNNING' ? ['입장 중…', '잠시만 기다려 주세요.'] : ['퀴즈가 마감되었어요', '다음 이벤트를 기대해 주세요!'];
+      main.innerHTML = `<div class="view lobby">${PM.mascot(150, 'bob')}<h2>${msg[0]}</h2><p class="muted">${msg[1]}</p></div>`;
+    } else if (viewKey === 'lobby') {
+      main.innerHTML = `<div class="view lobby">${PM.mascot(170, 'jump')}
+        <div class="pm-label" style="margin-top:12px">${PM.esc(st.eventName)}</div>
+        <h2>${PM.esc(q.title)}</h2>
+        <p class="muted">총 ${q.count}문제 · 만점자 중 가장 빠른 분이 수상!</p>
+        <div class="pm-well" style="margin:20px 0">곧 시작합니다<div class="dots" style="margin-top:10px"><span></span><span></span><span></span></div></div>
+        <p class="muted">화면을 켜 둔 채로 기다려 주세요.<br>사운드를 켜면 더 재밌어요 🔊</p></div>`;
+    } else if (viewKey.startsWith('q:')) {
+      const qq = me.question;
+      main.innerHTML = `<div class="view">
+        <div class="qhead"><span class="qnum">Q${qq.index + 1} / ${q.count}</span><span class="timer" id="timer">--</span></div>
+        <div class="bar" id="bar"><i id="bar-i" style="width:100%"></i></div>
+        <p class="qtext">${PM.esc(qq.text)}</p>
+        <div class="opts">${qq.options.map((o, i) => `<button class="opt" data-i="${i}"><span class="l">${PM.LETTERS[i]}</span><span>${PM.esc(o)}</span></button>`).join('')}</div>
+        <div class="submit-row"><button class="btn btn-primary btn-lg btn-block" id="submit" disabled>답안 제출</button></div>
+      </div>`;
+      PM.$$('.opt').forEach((b) => b.onclick = () => {
+        if (submitting) return;
+        selected = Number(b.dataset.i); snd.click();
+        PM.$$('.opt').forEach((x) => x.classList.toggle('sel', x === b));
+        PM.$('#submit').disabled = false;
+      });
+      PM.$('#submit').onclick = () => submit(selected);
+    } else if (viewKey === 'finished') {
+      snd.success();
+      main.innerHTML = `<div class="view lobby">${PM.mascot(160, 'jump')}<h2>모든 문제 제출 완료!</h2>
+        <p class="muted">채점은 서버에서 자동으로 진행돼요.<br>결과 발표를 기다려 주세요.</p></div>`;
+    } else if (viewKey === 'closed') {
+      const r = me.result || {};
+      main.innerHTML = `<div class="view lobby">${PM.mascot(130, 'bob')}<h2>퀴즈 종료</h2>
+        <div class="pm-panel" style="margin-top:14px"><div class="pm-label">내 점수</div>
+        <div class="big-num">${r.correct}<span style="font-size:24px;color:#999"> / ${r.total}</span></div>
+        <div class="muted" style="margin-top:6px">${r.finished ? '풀이 시간 ' + PM.sec(r.elapsed_ms) : '미완료'}${r.all_correct ? ' · 🎯 만점!' : ''}</div></div>
+        <p class="muted" style="margin-top:16px">곧 행사장 스크린에서 결과가 발표됩니다.</p></div>`;
+    } else if (viewKey === 'revealed') {
+      const r = me.result || {};
+      if (r.award_rank) { snd.fanfare(); setTimeout(() => PM.confetti(true), 200); }
+      main.innerHTML = `<div class="view lobby">${PM.mascot(130, r.award_rank ? 'jump' : 'bob')}
+        <div class="pm-panel" style="margin-top:10px">
+          <div class="pm-label">최종 순위</div>
+          <div class="big-num">${r.rank || '-'}<span style="font-size:22px;color:#999">위 / ${r.of}명</span></div>
+          ${r.award_rank ? `<div class="award">🏆 수상 ${r.award_rank}위 축하합니다!</div>` : ''}
+          <div class="muted" style="margin-top:8px">${r.correct} / ${r.total} 정답 · ${r.finished ? PM.sec(r.elapsed_ms) : '미완료'}</div>
+        </div>
+        <div class="rv"><div class="pm-label" style="margin:6px 0">정답 확인</div>
+        ${(r.review || []).map((x, i) => `<div class="rv-item"><b>Q${i + 1}.</b> ${PM.esc(x.text)}<br>
+          정답: <span class="ok">${PM.LETTERS[x.correct]}. ${PM.esc(x.options[x.correct])}</span>
+          ${x.mine === x.correct ? ' <span class="ok">⭕</span>' : ` <span class="ng">❌ 내 답: ${x.mine == null ? '미응답' : PM.LETTERS[x.mine]}</span>`}
+          ${x.explanation ? `<div class="muted" style="margin-top:4px">${PM.esc(x.explanation)}</div>` : ''}</div>`).join('')}</div></div>`;
+    } else {
+      main.innerHTML = `<div class="view lobby">${PM.mascot(150, 'bob')}<h2>잠시만요</h2></div>`;
+    }
+  }
+
+  async function submit(option) {
+    if (submitting || !st.me.question) return;
+    submitting = true;
+    const idx = st.me.question.index;
+    PM.$$('.opt').forEach((b) => b.disabled = true);
+    const sb = PM.$('#submit'); if (sb) { sb.disabled = true; sb.textContent = '제출 중…'; }
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try { const d = await PM.api('/api/quiz/answer', { token: tk, index: idx, option }); submitting = false; apply(d); return; }
+      catch (e) {
+        if (e.status && e.status < 500) { PM.toast(e.message, 'error'); break; }
+        await new Promise((r) => setTimeout(r, 600 * (attempt + 1))); // 네트워크 재시도 (서버는 중복 제출을 무시)
+      }
+    }
+    submitting = false;
+    PM.toast('제출에 실패했어요. 네트워크를 확인해 주세요.', 'error');
+    viewKey = ''; apply(st);
+  }
+
+  // 타이머 루프
+  setInterval(() => {
+    if (!st || !viewKey.startsWith('q:') || !st.me.question) return;
+    const qq = st.me.question;
+    const end = qq.shown_at + qq.time_limit * 1000;
+    const left = Math.max(0, end - PM.serverNow());
+    const el = PM.$('#timer'); const bar = PM.$('#bar'); const bi = PM.$('#bar-i');
+    if (!el) return;
+    const s = Math.ceil(left / 1000);
+    el.textContent = s;
+    const hurry = left <= 5000;
+    el.classList.toggle('hurry', hurry); bar.classList.toggle('hurry', hurry);
+    bi.style.width = (left / (qq.time_limit * 1000) * 100) + '%';
+    if (hurry && s !== lastTickSec && s > 0) { lastTickSec = s; snd.tick(); }
+    if (left <= 0 && !submitting) submit(selected); // 시간 초과 → 선택한 답(없으면 미응답) 제출
+  }, 200);
+
+  PM.stream('/api/stream?role=player&token=' + encodeURIComponent(tk), apply, (on) => PM.$('#conn').classList.toggle('on', on));
+
+  // 토큰이 무효(초기화 등)면 체크인으로
+  PM.api('/api/me?token=' + encodeURIComponent(tk)).catch((e) => { if (e.status === 401) { localStorage.removeItem(KEY); location.replace('/checkin?next=quiz'); } });
+})();
+</script>
+</body>
+</html>

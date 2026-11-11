@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>현장 체크인</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/moonspam/NanumSquare@2.0/nanumsquare.css" rel="stylesheet">
+<link rel="stylesheet" href="/common.css">
+<style>
+  h1 { color: var(--pm-deep); font-size: 24px; margin: 10px 0 4px; }
+  .done-card { text-align: center; }
+  .done-card .name { font-size: 26px; font-weight: 900; color: var(--pm-deep); margin: 8px 0 2px; font-family: 'NanumSquare', sans-serif; }
+  .ticket { margin: 18px 0; padding: 16px; border: 2px dashed var(--pm-green); border-radius: 14px; background: #f6fbef; }
+</style>
+</head>
+<body class="pm-bg-leaves">
+<div class="mobile-wrap">
+  <div class="center">
+    <img class="mascot bob" src="/assets/mascot" alt="두식이" width="110" height="110" style="margin:0 auto">
+    <div class="pm-label" id="ev" style="margin-top:6px">풀무원 컨퍼런스</div>
+  </div>
+
+  <section id="form-view" class="pm-panel hidden" style="margin-top:14px">
+    <h1>현장 체크인</h1>
+    <p class="muted" style="margin-top:0">사전 등록할 때 입력한 이름과 연락처로 체크인해 주세요.</p>
+    <form id="f" autocomplete="on">
+      <label class="field"><span>이름</span><input type="text" name="name" required maxlength="50" autocomplete="name" placeholder="홍길동"></label>
+      <label class="field"><span>휴대전화 또는 이메일</span><input type="text" name="contact" required maxlength="100" inputmode="email" autocomplete="tel" placeholder="010-1234-5678"></label>
+      <label class="field hidden" id="org-field"><span>회사/소속 (현장 등록 시)</span><input type="text" name="organization" maxlength="80"></label>
+      <label class="field hidden" id="code-field"><span>현장 인증 코드</span><input type="text" name="code" maxlength="20" autocomplete="off" placeholder="행사장 스크린에 표시된 코드" style="text-transform:uppercase;letter-spacing:.2em;font-weight:700"></label>
+      <button class="btn btn-primary btn-lg btn-block" type="submit" id="submit">체크인하기</button>
+    </form>
+    <p class="muted center" style="margin-top:14px">문제가 있으면 안내 데스크에 문의해 주세요.</p>
+  </section>
+
+  <section id="done-view" class="pm-panel done-card hidden" style="margin-top:14px">
+    <div class="speech">체크인 완료! 반가워요 🌱</div>
+    <div class="name" id="d-name"></div>
+    <div class="muted" id="d-org"></div>
+    <div class="ticket">
+      <div class="pm-label">LUCKY DRAW</div>
+      <div style="font-weight:700;margin-top:4px">럭키드로우 추첨 대상자로 등록되었습니다</div>
+      <div class="muted" id="d-time"></div>
+    </div>
+    <a class="btn btn-primary btn-lg btn-block" href="/quiz">실시간 퀴즈 참여하기</a>
+    <button class="btn btn-sm" id="not-me" style="margin-top:14px">본인이 아닌가요? 다시 체크인</button>
+  </section>
+</div>
+<script src="/common.js"></script>
+<script>
+(async function () {
+  const KEY = 'pm_token';
+  let info = {};
+  try { info = await PM.api('/api/public/info'); PM.$('#ev').textContent = info.eventName; } catch (e) { /* noop */ }
+  if (info.codeRequired) PM.$('#code-field').classList.remove('hidden');
+  if (info.allowWalkIn) PM.$('#org-field').classList.remove('hidden');
+  const code = new URLSearchParams(location.search).get('code');
+  if (code) PM.$('[name=code]').value = code;
+
+  function showDone(p, at) {
+    PM.$('#form-view').classList.add('hidden');
+    PM.$('#done-view').classList.remove('hidden');
+    PM.$('#d-name').textContent = p.name + ' 님';
+    PM.$('#d-org').textContent = p.organization || '';
+    PM.$('#d-time').textContent = at ? '체크인 ' + PM.time(at) : '';
+    const next = new URLSearchParams(location.search).get('next');
+    if (next === 'quiz') location.replace('/quiz');
+  }
+  function showForm() { PM.$('#done-view').classList.add('hidden'); PM.$('#form-view').classList.remove('hidden'); }
+
+  const t = localStorage.getItem(KEY);
+  if (t) {
+    try { const d = await PM.api('/api/me?token=' + encodeURIComponent(t)); showDone(d.participant, d.participant.checked_in_at); }
+    catch (e) { localStorage.removeItem(KEY); showForm(); }
+  } else showForm();
+
+  PM.$('#not-me').onclick = () => { localStorage.removeItem(KEY); showForm(); };
+  PM.$('#f').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const fd = Object.fromEntries(new FormData(ev.target));
+    const btn = PM.$('#submit'); btn.disabled = true; btn.textContent = '확인 중…';
+    try {
+      const d = await PM.api('/api/checkin', fd);
+      localStorage.setItem(KEY, d.token);
+      PM.toast(d.alreadyCheckedIn ? '이미 체크인되어 있어요' : '체크인 완료!', 'ok');
+      showDone(d.participant, Date.now());
+    } catch (e) { PM.toast(e.message, 'error'); }
+    finally { btn.disabled = false; btn.textContent = '체크인하기'; }
+  });
+})();
+</script>
+</body>
+</html>

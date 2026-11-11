@@ -1,0 +1,13 @@
+{
+  "name": "pulmuone-event",
+  "version": "1.0.0",
+  "private": true,
+  "description": "풀무원 컨퍼런스 럭키드로우 & 실시간 퀴즈 이벤트 시스템",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

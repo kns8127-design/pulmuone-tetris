@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>운영자 콘솔</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/moonspam/NanumSquare@2.0/nanumsquare.css" rel="stylesheet">
+<link rel="stylesheet" href="/common.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  body { min-height: 100vh; }
+  #login { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+  #login .pm-panel { width: 100%; max-width: 380px; text-align: center; }
+  .app { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+  .side { background: #fff; border-right: 1px solid var(--pm-cream); padding: 18px 12px; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 4px; }
+  .side .pm-logo { padding: 4px 8px 16px; }
+  .nav { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 12px; cursor: pointer; font-weight: 700; color: #5a5a52; border: 0; background: none; text-align: left; font-size: 14px; width: 100%; }
+  .nav:hover { background: var(--pm-cream-light); color: var(--pm-deep); }
+  .nav.active { background: #e6f3d3; color: var(--pm-deep); }
+  .nav .cnt { margin-left: auto; background: var(--pm-red); color: #fff; border-radius: 99px; font-size: 11px; padding: 1px 7px; }
+  .side-foot { margin-top: auto; padding: 8px; font-size: 12px; }
+  .main { padding: 22px 28px 60px; min-width: 0; }
+  .topline { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+  .topline h2 { margin: 0; color: var(--pm-deep); font-size: 22px; }
+  .conn-dot { width: 9px; height: 9px; border-radius: 50%; background: #ccc; display: inline-block; }
+  .conn-dot.on { background: var(--pm-green); box-shadow: 0 0 0 3px rgba(141,198,63,.25); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .tile { background: #fff; border: 1px solid var(--pm-cream); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .tile .v { font-family: 'NanumSquare', sans-serif; font-size: 30px; font-weight: 900; color: var(--pm-deep); line-height: 1.1; margin-top: 4px; }
+  .tile .v small { font-size: 14px; color: #999; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .sec-title { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 16px; color: var(--pm-olive); }
+  .sec-title .grow { flex: 1; }
+  .tab { display: none; }
+  .tab.active { display: block; animation: fade .2s; }
+  @keyframes fade { from { opacity: 0; } }
+  .screen-btns { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .screen-btns .btn.on { background: var(--pm-deep); color: #fff; border-color: var(--pm-deep); }
+  .qr-mini { display: flex; gap: 14px; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1efe7; }
+  .qr-mini:last-child { border-bottom: 0; }
+  .qr-mini .q { width: 84px; height: 84px; flex: none; }
+  .qr-mini .q img, .qr-mini .q canvas { width: 84px !important; height: 84px !important; }
+  .qr-mini code { font-size: 12px; word-break: break-all; color: var(--pm-sage); }
+  .rank-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .rank-tabs button { flex: 1; padding: 14px; border-radius: 14px; border: 2px solid var(--pm-cream); background: #fff; font-family: 'NanumSquare', sans-serif; font-size: 18px; font-weight: 900; cursor: pointer; color: #777; }
+  .rank-tabs button.active { border-color: var(--pm-green); background: #f3f9ea; color: var(--pm-deep); }
+  .prize-img { width: 100%; height: 160px; object-fit: contain; background: var(--pm-cream-light); border-radius: 12px; border: 1px dashed var(--pm-gray); display: grid; place-items: center; color: #aaa; overflow: hidden; }
+  .prize-img img { width: 100%; height: 100%; object-fit: contain; }
+  .draw-big { font-size: 20px; padding: 18px; }
+  .q-card { border: 1px solid var(--pm-cream); border-radius: 14px; padding: 14px; margin-bottom: 12px; background: #fff; }
+  .q-card .opt-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .q-card .opt-row .l { width: 28px; font-weight: 900; color: var(--pm-sage); font-family: 'NanumSquare', sans-serif; }
+  .q-card .opt-row input[type=radio] { width: 18px; height: 18px; accent-color: var(--pm-green); }
+  .q-card.locked { opacity: .75; }
+  .state-flow { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .state-flow .s { padding: 6px 12px; border-radius: 99px; background: var(--pm-cream); font-size: 12px; font-weight: 800; color: #888; }
+  .state-flow .s.on { background: var(--pm-deep); color: #fff; }
+  .modal-bg { position: fixed; inset: 0; background: rgba(30, 40, 20, .45); display: grid; place-items: center; z-index: 100; padding: 16px; }
+  .modal { background: #fff; border-radius: 20px; padding: 26px; width: 100%; max-width: 520px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.25); border: 3px solid var(--pm-green); }
+  .modal h3 { font-size: 26px; color: var(--pm-deep); margin: 6px 0; }
+  .modal .w { font-family: 'NanumSquare', sans-serif; font-size: 26px; font-weight: 900; margin: 4px 0; }
+  .scroll { max-height: 460px; overflow: auto; }
+  .filters { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .filters input { max-width: 260px; }
+  .filters select { max-width: 160px; }
+  .warn-box { background: #fdf0d2; color: #7a5600; border-radius: 12px; padding: 10px 14px; font-size: 13px; margin-bottom: 12px; }
+  .vol { accent-color: var(--pm-green); width: 100%; }
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    .side { position: static; height: auto; flex-direction: row; flex-wrap: wrap; }
+    .side .pm-logo, .side-foot { display: none; }
+    .nav { width: auto; }
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+    .main { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+<section id="login" class="hidden pm-bg-leaves">
+  <div class="pm-panel">
+    <img class="mascot bob" src="/assets/mascot" alt="두식이" width="110" height="110" style="margin:0 auto">
+    <h2 class="deep" style="margin:10px 0 4px">운영자 로그인</h2>
+    <p class="muted" style="margin-top:0">럭키드로우 & 실시간 퀴즈 운영 콘솔</p>
+    <form id="login-f"><label class="field"><input type="password" name="password" placeholder="비밀번호" required autocomplete="current-password"></label>
+      <button class="btn btn-primary btn-block btn-lg">로그인</button></form>
+  </div>
+</section>
+
+<div id="app" class="app hidden">
+  <aside class="side">
+    <div class="pm-logo"><span id="leaf"></span><span>풀무원<br><small>EVENT CONSOLE</small></span></div>
+    <button class="nav active" data-tab="dash">📊 대시보드</button>
+    <button class="nav" data-tab="people">👥 참석자 <span class="cnt hidden" id="nav-rv"></span></button>
+    <button class="nav" data-tab="draw">🎁 럭키드로우</button>
+    <button class="nav" data-tab="quiz">❓ 실시간 퀴즈</button>
+    <button class="nav" data-tab="settings">⚙️ 설정 · 로그</button>
+    <div class="side-foot"><div id="role-badge" class="badge ok"></div><div style="margin-top:8px"><a href="#" id="logout">로그아웃</a></div></div>
+  </aside>
+  <main class="main">
+    <div class="topline">
+      <span class="conn-dot" id="conn"></span><h2 id="ev-name">-</h2><span class="grow"></span>
+      <a class="btn btn-sm" id="open-screen" target="_blank">🖥 행사장 스크린 열기</a>
+    </div>
+
+    <!-- 대시보드 -->
+    <section class="tab active" id="tab-dash">
+      <div class="tiles" id="tiles"></div>
+      <div class="grid2">
+        <div class="pm-panel">
+          <h3 class="sec-title">🖥 행사장 스크린 제어</h3>
+          <div class="screen-btns" id="screen-btns">
+            <button class="btn" data-view="home">🏠 체크인 안내</button>
+            <button class="btn" data-view="draw">🎁 럭키드로우</button>
+            <button class="btn" data-view="quiz">❓ 퀴즈</button>
+            <button class="btn" data-view="results">🏆 퀴즈 결과</button>
+          </div>
+          <h3 class="sec-title" style="margin-top:20px">🔊 사운드 (행사장 스크린)</h3>
+          <div class="row"><label class="row"><input type="checkbox" id="snd-bgm"> 퀴즈 배경음악</label><label class="row"><input type="checkbox" id="snd-sfx"> 효과음</label></div>
+          <div class="row" style="margin-top:8px"><span class="muted">볼륨</span><input type="range" min="0" max="1" step="0.05" id="snd-vol" class="vol grow"></div>
+        </div>
+        <div class="pm-panel">
+          <h3 class="sec-title">📱 QR · 접속 주소</h3>
+          <div id="qr-list"></div>
+          <p class="muted" id="url-hint"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 참석자 -->
+    <section class="tab" id="tab-people">
+      <div class="grid3" style="margin-bottom:16px">
+        <div class="pm-panel">
+          <h3 class="sec-title">🔄 Google Sheets 동기화</h3>
+          <label class="field"><span>시트 주소 (공유 링크 또는 CSV 게시 주소)</span><input type="url" id="sheet-url" placeholder="https://docs.google.com/spreadsheets/d/..."></label>
+          <button class="btn btn-primary btn-block" id="sync">지금 동기화</button>
+          <p class="muted">이름 · 회사/소속 · 휴대전화/이메일 · 동의 열을 자동 인식합니다.</p>
+        </div>
+        <div class="pm-panel">
+          <h3 class="sec-title">📄 CSV 파일 가져오기</h3>
+          <p class="muted" style="margin-top:0">Google Forms 응답 시트를 CSV로 내려받아 업로드할 수도 있습니다.</p>
+          <input type="file" id="csv-file" accept=".csv,text/csv">
+          <button class="btn btn-block" id="csv-import" style="margin-top:10px">가져오기</button>
+        </div>
+        <div class="pm-panel">
+          <h3 class="sec-title">➕ 수동 등록 (안내 데스크)</h3>
+          <form id="add-f">
+            <div class="row"><input type="text" name="name" placeholder="이름" required class="grow" style="width:auto"><input type="text" name="organization" placeholder="소속" class="grow" style="width:auto"></div>
+            <input type="text" name="contact" placeholder="휴대전화 또는 이메일" required style="margin-top:8px">
+            <div class="row" style="margin-top:8px"><label class="row"><input type="checkbox" name="checkin" checked> 바로 체크인</label><span class="grow"></span><button class="btn btn-primary btn-sm">등록</button></div>
+          </form>
+        </div>
+      </div>
+      <div class="pm-panel" style="margin-bottom:16px" id="review-panel">
+        <h3 class="sec-title">⚠️ 검토 필요 (중복 · 오류) <span class="grow"></span><button class="btn btn-sm" id="rv-all">모두 확인 처리</button></h3>
+        <div class="scroll" style="max-height:220px"><table class="pm-table"><thead><tr><th>시각</th><th>유형</th><th>내용</th><th>데이터</th><th></th></tr></thead><tbody id="rv-body"></tbody></table></div>
+      </div>
+      <div class="pm-panel">
+        <h3 class="sec-title">👥 참석자 명단 <span class="grow"></span><a class="btn btn-sm" href="/api/admin/export/participants.csv">⬇ CSV</a></h3>
+        <div class="filters"><input type="text" id="p-q" placeholder="이름·소속 검색"><select id="p-f"><option value="">전체</option><option value="CHECKED_IN">체크인 완료</option><option value="REGISTERED">미인증</option><option value="WINNER">당첨자</option></select><span class="muted" id="p-count" style="align-self:center"></span></div>
+        <div class="scroll"><table class="pm-table"><thead><tr><th>이름</th><th>소속</th><th>연락처</th><th>상태</th><th>체크인</th><th>출처</th><th></th></tr></thead><tbody id="p-body"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- 럭키드로우 -->
+    <section class="tab" id="tab-draw">
+      <div class="rank-tabs" id="rank-tabs"><button data-r="1">🥇 1등</button><button data-r="2">🥈 2등</button><button data-r="3" class="active">🥉 3등</button></div>
+      <div class="grid2">
+        <div class="pm-panel">
+          <h3 class="sec-title">🎁 <span id="pz-title">3등</span> 상품 설정</h3>
+          <form id="prize-f">
+            <label class="field"><span>상품명</span><input type="text" name="prize_name" maxlength="80" required></label>
+            <div class="field"><span>상품 이미지</span><div class="prize-img" id="pz-img">이미지 없음</div>
+              <div class="row" style="margin-top:6px"><input type="file" id="pz-file" accept="image/png,image/jpeg,image/webp,image/gif" class="grow"><button type="button" class="btn btn-sm" id="pz-clear">이미지 제거</button></div></div>
+            <div class="row">
+              <label class="field grow"><span>당첨 인원</span><input type="number" name="winner_count" min="1" max="100" required></label>
+              <label class="field grow"><span>추첨 방식</span><select name="mode"><option value="one">1명씩</option><option value="batch">일괄 추첨</option></select></label>
+            </div>
+            <button class="btn btn-deep btn-block">상품 설정 저장</button>
+          </form>
+        </div>
+        <div class="pm-panel center">
+          <h3 class="sec-title">🎲 추첨 실행</h3>
+          <div class="tiles" style="grid-template-columns:1fr 1fr">
+            <div class="tile"><div class="pm-label">추첨 가능 인원</div><div class="v" id="d-elig">0</div></div>
+            <div class="tile"><div class="pm-label"><span id="d-rk">3</span>등 당첨 현황</div><div class="v" id="d-progress">0/1</div></div>
+          </div>
+          <div class="muted" id="d-note" style="margin-bottom:12px">체크인 완료자 중 기존 당첨자는 자동 제외됩니다.</div>
+          <button class="btn btn-primary btn-block draw-big" id="draw-btn">🎉 추첨 시작</button>
+          <p class="muted">추첨 버튼을 누르면 서버가 당첨자를 확정하고 행사장 스크린에 추첨 애니메이션이 재생됩니다.</p>
+        </div>
+      </div>
+      <div class="pm-panel" style="margin-top:16px">
+        <h3 class="sec-title">📜 당첨 이력 <span class="grow"></span><a class="btn btn-sm" href="/api/admin/export/draws.csv">⬇ CSV</a></h3>
+        <div class="scroll"><table class="pm-table"><thead><tr><th>등수</th><th>당첨자</th><th>소속</th><th>상품</th><th>추첨 시각</th><th>상태</th><th></th></tr></thead><tbody id="d-body"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- 퀴즈 -->
+    <section class="tab" id="tab-quiz">
+      <div class="pm-panel" style="margin-bottom:16px">
+        <h3 class="sec-title">🎮 진행 제어</h3>
+        <div class="state-flow" id="q-flow"></div>
+        <div class="row" id="q-actions"></div>
+        <div class="muted" id="q-timer" style="margin-top:10px"></div>
+      </div>
+      <div class="tiles" id="q-tiles"></div>
+      <div class="grid2">
+        <div class="pm-panel">
+          <h3 class="sec-title">🏆 만점자 수상 순위 (상위 <span id="q-n">3</span>명)</h3>
+          <div id="q-tie"></div>
+          <table class="pm-table"><thead><tr><th>수상</th><th>이름</th><th>소속</th><th>풀이 시간</th></tr></thead><tbody id="q-win"></tbody></table>
+        </div>
+        <div class="pm-panel">
+          <h3 class="sec-title">📈 전체 순위 <span class="grow"></span><a class="btn btn-sm" href="/api/admin/export/quiz.csv">⬇ CSV</a></h3>
+          <div class="scroll" style="max-height:340px"><table class="pm-table"><thead><tr><th>순위</th><th>이름</th><th>정답</th><th>진행</th><th>시간</th></tr></thead><tbody id="q-rank"></tbody></table></div>
+        </div>
+      </div>
+      <div class="pm-panel" style="margin-top:16px">
+        <h3 class="sec-title">📝 문제 관리 <span class="grow"></span><span class="muted" id="q-dirty"></span></h3>
+        <div id="q-lock" class="warn-box hidden">퀴즈가 진행 중이거나 종료되어 문제를 수정할 수 없습니다. (최고 관리자가 초기화하면 수정 가능)</div>
+        <div class="row" style="margin-bottom:14px">
+          <label class="field grow" style="margin:0"><span>퀴즈 제목</span><input type="text" id="q-title" maxlength="80"></label>
+          <label class="field" style="margin:0;width:160px"><span>만점자 수상 인원 N</span><input type="number" id="q-wc" min="1" max="100"></label>
+        </div>
+        <div id="q-editor"></div>
+        <div class="row"><button class="btn" id="q-add">➕ 문제 추가</button><span class="grow"></span><button class="btn" id="q-revert">되돌리기</button><button class="btn btn-deep" id="q-save">문제 저장</button></div>
+      </div>
+    </section>
+
+    <!-- 설정 -->
+    <section class="tab" id="tab-settings">
+      <div class="grid2">
+        <div class="pm-panel">
+          <h3 class="sec-title">⚙️ 행사 설정 <span class="badge warn super-only-badge hidden">최고 관리자 전용</span></h3>
+          <form id="set-f">
+            <label class="field"><span>행사명</span><input type="text" name="eventName" maxlength="80"></label>
+            <label class="field"><span>현장 인증 코드 (비우면 사용 안 함)</span><input type="text" name="checkinCode" maxlength="20" placeholder="예: GREEN26" style="text-transform:uppercase"></label>
+            <label class="row" style="margin-bottom:12px"><input type="checkbox" name="allowWalkIn"> 사전 미등록자 현장 등록 허용</label>
+            <label class="field"><span>참석자용 공개 주소 (QR에 사용, 예: https://event.example.com)</span><input type="url" name="publicUrl" placeholder="비우면 현재 접속 주소 사용"></label>
+            <div class="row"><button class="btn btn-deep">설정 저장</button><button type="button" class="btn" id="regen-key">스크린 키 재발급</button></div>
+          </form>
+        </div>
+        <div class="pm-panel">
+          <h3 class="sec-title">🗑 데이터 초기화 <span class="badge bad">최고 관리자 전용</span></h3>
+          <p class="muted" style="margin-top:0">리허설 후 실제 행사 전에 초기화하세요. 되돌릴 수 없습니다. (감사 로그는 유지)</p>
+          <div class="row">
+            <button class="btn btn-danger" data-reset="draws">추첨 결과 초기화</button>
+            <button class="btn btn-danger" data-reset="quiz">퀴즈 결과 초기화</button>
+            <button class="btn btn-danger" data-reset="participants">참석자 전체 삭제</button>
+            <button class="btn btn-danger" data-reset="all">전체 초기화</button>
+          </div>
+        </div>
+      </div>
+      <div class="pm-panel" style="margin-top:16px">
+        <h3 class="sec-title">🧾 감사 로그 <span class="grow"></span><a class="btn btn-sm" href="/api/admin/export/audit.csv">⬇ CSV</a></h3>
+        <div class="scroll"><table class="pm-table"><thead><tr><th>시각</th><th>작업자</th><th>동작</th><th>내용</th></tr></thead><tbody id="audit-body"></tbody></table></div>
+      </div>
+    </section>
+  </main>
+</div>
+<div id="modal"></div>
+
+<script src="/common.js"></script>
+<script>
+(function () {
+  const { $, $$, esc, api, toast } = PM;
+  let S = null; let role = null; let curRank = 3; let qDraft = null; let qDirty = false; let prizeDirty = false; let setDirty = false; let lastDrawSeq = null; let qrKey = '';
+  $('#leaf').innerHTML = PM.leaf;
+  const ROLE = { super: '최고 관리자', operator: '행사 운영자' };
+  const STATE_KO = { IDLE: '준비', OPEN: '대기실 열림', RUNNING: '진행 중', CLOSED: '마감', REVEALED: '결과 발표' };
+  const RV_KO = { duplicate: '중복 응답', conflict: '연락처 충돌', missing_field: '필수값 누락', no_consent: '미동의', name_mismatch: '이름 불일치' };
+  const act = async (path, body, okMsg) => { try { const r = await api(path, body); if (okMsg) toast(okMsg, 'ok'); return r; } catch (e) { toast(e.message, 'error'); throw e; } };
+
+  /* ── 로그인 ── */
+  async function boot() {
+    try { const r = await api('/api/admin/whoami'); role = r.role; start(); }
+    catch (e) { $('#login').classList.remove('hidden'); }
+  }
+  $('#login-f').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    try { const r = await api('/api/login', { password: ev.target.password.value }); role = r.role; $('#login').classList.add('hidden'); start(); }
+    catch (e) { toast(e.message, 'error'); }
+  });
+  $('#logout').onclick = async (ev) => { ev.preventDefault(); await api('/api/logout', {}); location.reload(); };
+
+  function start() {
+    $('#app').classList.remove('hidden');
+    $('#role-badge').textContent = ROLE[role];
+    if (role !== 'super') { $$('#set-f input, #set-f button, #regen-key, [data-reset]').forEach((el) => el.disabled = true); $('.super-only-badge').classList.remove('hidden'); }
+    PM.stream('/api/stream?role=admin', onState, (on) => $('#conn').classList.toggle('on', on));
+  }
+
+  /* ── 탭 ── */
+  $$('.nav').forEach((b) => b.onclick = () => {
+    $$('.nav').forEach((x) => x.classList.toggle('active', x === b));
+    $$('.tab').forEach((t) => t.classList.toggle('active', t.id === 'tab-' + b.dataset.tab));
+  });
+
+  function onState(d) {
+    const first = !S; S = d;
+    $('#ev-name').textContent = d.settings.eventName;
+    $('#open-screen').href = '/screen?key=' + encodeURIComponent(d.settings.screenKey);
+    const rv = d.stats.reviewsOpen; $('#nav-rv').textContent = rv; $('#nav-rv').classList.toggle('hidden', !rv);
+    renderDash(); renderPeople(); renderDrawInfo(); renderQuizLive(); renderAudit();
+    if (first || !prizeDirty) fillPrize();
+    if (first || !setDirty) fillSettings();
+    if (first || !qDirty) loadQuizDraft();
+    lockQuizEditor();
+    handleDrawModal();
+  }
+
+  /* ── 대시보드 ── */
+  function renderDash() {
+    const s = S.stats;
+    const tile = (l, v, sub) => `<div class="tile"><div class="pm-label">${l}</div><div class="v">${v}${sub ? `<small> ${sub}</small>` : ''}</div></div>`;
+    $('#tiles').innerHTML = tile('총 등록', s.total, '명') + tile('체크인 완료', s.checkedIn, '명') + tile('미인증', s.notCheckedIn, '명')
+      + tile('추첨 가능', s.eligible, '명') + tile('퀴즈 참여', s.quizJoined, `/ 완료 ${s.quizFinished}`) + tile('검토 필요', s.reviewsOpen, '건');
+    $$('#screen-btns .btn').forEach((b) => b.classList.toggle('on', b.dataset.view === S.screen.view));
+    const snd = S.settings.sound;
+    $('#snd-bgm').checked = snd.bgm; $('#snd-sfx').checked = snd.sfx;
+    if (document.activeElement !== $('#snd-vol')) $('#snd-vol').value = snd.volume;
+    const base = S.settings.publicUrl || location.origin;
+    const k = base + '|' + S.settings.screenKey + '|' + S.settings.checkinCode;
+    if (k !== qrKey) {
+      qrKey = k;
+      const items = [['체크인', base + '/checkin'], ['퀴즈', base + '/quiz'], ['행사장 스크린 (키 포함 · 외부 공유 금지)', base + '/screen?key=' + S.settings.screenKey]];
+      $('#qr-list').innerHTML = items.map(([n, u], i) => `<div class="qr-mini"><div class="q" id="qrm${i}"></div><div><b>${n}</b><br><code>${esc(u)}</code><br><a href="${esc(u)}" target="_blank" class="muted">열기 ↗</a></div></div>`).join('');
+      items.forEach(([, u], i) => PM.qr($('#qrm' + i), u, 168));
+      $('#url-hint').textContent = /localhost|127\.0\.0\.1/.test(base) ? '⚠ 현재 localhost 주소입니다. 참석자 휴대폰에서 접속하려면 설정에서 공개 주소(또는 같은 와이파이의 PC IP 주소)를 지정하세요.' : '';
+    }
+  }
+  $$('#screen-btns .btn').forEach((b) => b.onclick = () => act('/api/admin/screen', { view: b.dataset.view }));
+  $('#snd-bgm').onchange = (e) => act('/api/admin/sound', { bgm: e.target.checked });
+  $('#snd-sfx').onchange = (e) => act('/api/admin/sound', { sfx: e.target.checked });
+  $('#snd-vol').onchange = (e) => act('/api/admin/sound', { volume: Number(e.target.value) });
+
+  /* ── 참석자 ── */
+  function renderPeople() {
+    const q = $('#p-q').value.trim().toLowerCase(); const f = $('#p-f').value;
+    const winners = new Set(S.draws.filter((d) => d.status === 'VALID').map((d) => d.participant_id));
+    let list = S.participants;
+    if (q) list = list.filter((p) => (p.name + ' ' + p.organization).toLowerCase().includes(q));
+    if (f === 'WINNER') list = list.filter((p) => winners.has(p.participant_id));
+    else if (f) list = list.filter((p) => p.checkin_status === f);
+    $('#p-count').textContent = `${list.length}명 표시 / 전체 ${S.participants.length}명`;
+    const shown = list.slice(0, 500);
+    $('#p-body').innerHTML = shown.map((p) => `<tr>
+      <td><b>${esc(p.name)}</b>${winners.has(p.participant_id) ? ' <span class="badge warn">당첨</span>' : ''}</td><td>${esc(p.organization)}</td><td class="muted">${esc(p.contact)}</td>
+      <td>${p.checkin_status === 'CHECKED_IN' ? '<span class="badge ok">체크인</span>' : '<span class="badge">미인증</span>'}</td>
+      <td class="muted">${PM.time(p.checked_in_at)}</td><td class="muted">${esc(p.source)}</td>
+      <td style="white-space:nowrap">${p.checkin_status === 'CHECKED_IN' ? `<button class="btn btn-sm" data-ci="${p.participant_id}" data-v="0">체크인 취소</button>` : `<button class="btn btn-sm btn-primary" data-ci="${p.participant_id}" data-v="1">체크인</button>`}
+        ${role === 'super' ? `<button class="btn btn-sm btn-danger" data-del="${p.participant_id}">삭제</button>` : ''}</td></tr>`).join('')
+      + (list.length > 500 ? `<tr><td colspan="7" class="muted center">상위 500명만 표시 — 검색으로 좁혀 주세요</td></tr>` : '')
+      + (!list.length ? `<tr><td colspan="7" class="muted center" style="padding:30px">참석자가 없습니다. Google Sheets 동기화 또는 CSV 가져오기를 진행하세요.</td></tr>` : '');
+    $('#rv-body').innerHTML = S.reviews.slice().reverse().map((r) => `<tr><td class="muted">${PM.time(r.at)}</td><td><span class="badge warn">${RV_KO[r.type] || r.type}</span></td>
+      <td>${esc(r.detail)}</td><td class="muted">${r.row ? esc([r.row.name, r.row.organization, r.row.contact].filter(Boolean).join(' / ')) : ''}</td>
+      <td><button class="btn btn-sm" data-rv="${r.id}">확인</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted center">검토할 항목이 없습니다.</td></tr>';
+  }
+  $('#p-q').oninput = renderPeople; $('#p-f').onchange = renderPeople;
+  $('#p-body').onclick = async (e) => {
+    const ci = e.target.closest('[data-ci]'); const del = e.target.closest('[data-del]');
+    if (ci) act('/api/admin/participants/checkin', { participant_id: ci.dataset.ci, checked: ci.dataset.v === '1' });
+    if (del && confirm('이 참석자를 삭제할까요?')) act('/api/admin/participants/delete', { participant_id: del.dataset.del }, '삭제했습니다');
+  };
+  $('#rv-body').onclick = (e) => { const b = e.target.closest('[data-rv]'); if (b) act('/api/admin/reviews/resolve', { id: b.dataset.rv }); };
+  $('#rv-all').onclick = () => act('/api/admin/reviews/resolve', { all: true });
+  const importMsg = (r) => `추가 ${r.added} · 갱신 ${r.updated} · 중복 ${r.duplicates} · 오류 ${r.errors}`;
+  $('#sync').onclick = async () => {
+    const b = $('#sync'); b.disabled = true; b.innerHTML = '<span class="spin">🔄</span> 동기화 중…';
+    try { const r = await act('/api/admin/participants/sync', { url: $('#sheet-url').value.trim() || undefined }); toast(importMsg(r), 'ok'); } catch (e) { /* toasted */ }
+    b.disabled = false; b.textContent = '지금 동기화';
+  };
+  $('#csv-import').onclick = async () => {
+    const f = $('#csv-file').files[0]; if (!f) return toast('CSV 파일을 선택하세요', 'error');
+    const buf = await f.arrayBuffer();
+    let text = new TextDecoder('utf-8').decode(buf);
+    if (text.includes('�')) text = new TextDecoder('euc-kr').decode(buf); // 엑셀 CSV(EUC-KR) 대응
+    try { const r = await act('/api/admin/participants/import', { csv: text }); toast(importMsg(r), 'ok'); $('#csv-file').value = ''; } catch (e) { /* toasted */ }
+  };
+  $('#add-f').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const fd = Object.fromEntries(new FormData(ev.target)); fd.checkin = !!fd.checkin;
+    try { await act('/api/admin/participants/add', fd, '등록했습니다'); ev.target.reset(); ev.target.checkin.checked = true; } catch (e) { /* toasted */ }
+  });
+
+  /* ── 럭키드로우 ── */
+  $$('#rank-tabs button').forEach((b) => b.onclick = () => {
+    if (prizeDirty && !confirm('저장하지 않은 상품 설정이 있습니다. 이동할까요?')) return;
+    curRank = Number(b.dataset.r); prizeDirty = false;
+    $$('#rank-tabs button').forEach((x) => x.classList.toggle('active', x === b));
+    fillPrize(); renderDrawInfo();
+  });
+  let pzImage = '';
+  function setPzImg(url) { pzImage = url; $('#pz-img').innerHTML = url ? `<img src="${esc(url)}" alt="">` : '이미지 없음'; }
+  function fillPrize() {
+    const p = S.prizes[curRank]; const f = $('#prize-f');
+    $('#pz-title').textContent = curRank + '등';
+    f.prize_name.value = p.prize_name; f.winner_count.value = p.winner_count; f.mode.value = p.mode;
+    setPzImg(p.prize_image_url);
+  }
+  $('#prize-f').addEventListener('input', () => { prizeDirty = true; });
+  $('#pz-file').onchange = async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    if (file.size > 6 * 1024 * 1024) return toast('6MB 이하 이미지만 가능합니다', 'error');
+    try { const r = await api('/api/admin/upload', file, { raw: true, type: file.type }); setPzImg(r.url); prizeDirty = true; toast('이미지 업로드 완료 — 저장을 눌러 주세요'); }
+    catch (er) { toast(er.message, 'error'); }
+    e.target.value = '';
+  };
+  $('#pz-clear').onclick = () => { setPzImg(''); prizeDirty = true; };
+  $('#prize-f').addEventListener('submit', async (ev) => {
+    ev.preventDefault(); const f = ev.target;
+    try { await act('/api/admin/prizes', { rank: curRank, prize_name: f.prize_name.value, winner_count: Number(f.winner_count.value), mode: f.mode.value, prize_image_url: pzImage }, `${curRank}등 상품을 저장했습니다`); prizeDirty = false; } catch (e) { /* toasted */ }
+  });
+  function renderDrawInfo() {
+    const p = S.prizes[curRank];
+    const won = S.draws.filter((d) => d.rank === curRank && d.status === 'VALID').length;
+    $('#d-elig').textContent = S.stats.eligible; $('#d-rk').textContent = curRank;
+    $('#d-progress').innerHTML = `${won}<small>/${p.winner_count}</small>`;
+    const btn = $('#draw-btn');
+    const done = won >= p.winner_count;
+    btn.disabled = done || S.stats.eligible === 0;
+    btn.textContent = done ? `✅ ${curRank}등 추첨 완료` : S.stats.eligible === 0 ? '추첨 가능 인원 없음' : `🎉 ${curRank}등 추첨 시작 (${p.mode === 'batch' ? Math.min(p.winner_count - won, S.stats.eligible) + '명 일괄' : '1명'})`;
+    $('#d-note').textContent = S.stats.eligible === 0 ? '⚠ 체크인 완료자 중 미당첨자가 없어 추첨할 수 없습니다.' : '체크인 완료자 중 기존 당첨자는 자동 제외됩니다.';
+    $('#d-body').innerHTML = S.draws.slice().reverse().map((d) => `<tr style="${d.status === 'VOID' ? 'opacity:.5' : ''}">
+      <td><b class="rank-${d.rank}">${d.rank}등</b></td><td><b>${esc(d.name)}</b></td><td>${esc(d.organization)}</td><td>${esc(d.prize_name)}</td><td class="muted">${PM.time(d.drawn_at)}</td>
+      <td>${d.status === 'VALID' ? '<span class="badge ok">유효</span>' : `<span class="badge bad">무효</span> <span class="muted">${esc(d.audit_reason)}</span>`}</td>
+      <td>${d.status === 'VALID' && role === 'super' ? `<button class="btn btn-sm btn-danger" data-void="${d.draw_id}">무효 처리</button>` : ''}</td></tr>`).join('')
+      || '<tr><td colspan="7" class="muted center" style="padding:24px">아직 추첨 기록이 없습니다.</td></tr>';
+  }
+  $('#draw-btn').onclick = async () => {
+    const btn = $('#draw-btn'); btn.disabled = true;
+    try { await act('/api/admin/draw', { rank: curRank }); } catch (e) { btn.disabled = false; }
+  };
+  $('#d-body').onclick = (e) => {
+    const b = e.target.closest('[data-void]'); if (!b) return;
+    modal(`<h3>당첨 무효 처리</h3><p class="muted">기록은 보존되며 감사 로그에 남습니다.</p>
+      <label class="field" style="text-align:left"><span>무효 사유 (필수)</span><input type="text" id="void-reason" maxlength="200" placeholder="예: 현장 부재, 운영 실수"></label>
+      <label class="row" style="justify-content:flex-start;margin-bottom:14px"><input type="checkbox" id="void-re"> 이 참석자를 다시 추첨 대상에 포함</label>
+      <div class="row" style="justify-content:center"><button class="btn" data-close>취소</button><button class="btn btn-danger" id="void-go">무효 처리</button></div>`);
+    $('#void-go').onclick = async () => {
+      try { await act('/api/admin/draw/void', { draw_id: b.dataset.void, reason: $('#void-reason').value, reinclude: $('#void-re').checked }, '무효 처리했습니다. 재추첨이 가능합니다.'); closeModal(); } catch (er) { /* toasted */ }
+    };
+  };
+  function handleDrawModal() {
+    const d = S.screen.draw;
+    if (!d || !d.open) { if (lastDrawSeq !== null && $('#draw-modal')) closeModal(); lastDrawSeq = d ? d.seq : lastDrawSeq; return; }
+    if (d.seq === lastDrawSeq) return;
+    lastDrawSeq = d.seq;
+    modal(`<div id="draw-modal">${PM.mascot(80, 'jump')}<h3>🎉 ${d.rank}등 당첨!</h3><div class="muted">🎁 ${esc(d.prize_name)}</div>
+      <div style="margin:14px 0">${d.winners.map((w) => `<div class="w">${esc(w.name)} <span class="muted" style="font-size:14px">${esc(w.organization || '')}</span></div>`).join('')}</div>
+      <p class="muted" id="dm-hint">행사장 스크린에서 추첨 애니메이션 재생 중…</p>
+      <div class="row" style="justify-content:center"><button class="btn btn-primary" id="dm-next">다음 추첨</button><button class="btn" id="dm-close">결과 닫기</button></div></div>`, true);
+    setTimeout(() => { const h = $('#dm-hint'); if (h) h.textContent = '스크린에 축하 팝업이 표시되었습니다.'; }, 4700);
+    $('#dm-next').onclick = () => { act('/api/admin/screen', { closeDraw: true }); closeModal(); };
+    $('#dm-close').onclick = () => { act('/api/admin/screen', { closeDraw: true, view: 'home' }); closeModal(); };
+  }
+
+  /* ── 퀴즈 ── */
+  function renderQuizLive() {
+    const q = S.quiz; const L = S.quizLive;
+    const order = ['IDLE', 'OPEN', 'RUNNING', 'CLOSED', 'REVEALED'];
+    $('#q-flow').innerHTML = order.map((s) => `<span class="s ${s === q.state ? 'on' : ''}">${STATE_KO[s]}</span>`).join('<span class="muted">›</span>');
+    const A = {
+      IDLE: `<button class="btn btn-primary" data-qa="open">🚪 대기실 열기 (QR 입장 시작)</button>`,
+      OPEN: `<button class="btn btn-primary btn-lg" data-qa="start">▶ 퀴즈 시작 (${L.joined}명 대기 중)</button>`,
+      RUNNING: `<button class="btn btn-danger" data-qa="close">⏹ 지금 마감</button>${L.joined && L.finished === L.joined ? '<span class="badge ok">전원 제출 완료 — 마감 가능</span>' : ''}`,
+      CLOSED: `<button class="btn btn-deep btn-lg" data-qa="reveal">🏆 결과 발표 (스크린 공개)</button>`,
+      REVEALED: `<span class="badge ok">결과가 스크린에 공개되었습니다</span>`,
+    };
+    $('#q-actions').innerHTML = A[q.state] + (role === 'super' && q.state !== 'IDLE' ? '<span class="grow"></span><button class="btn btn-sm btn-danger" data-qa="reset">퀴즈 초기화</button>' : '');
+    $('#q-n').textContent = q.winnerCount;
+    const tile = (l, v) => `<div class="tile"><div class="pm-label">${l}</div><div class="v">${v}</div></div>`;
+    $('#q-tiles').innerHTML = tile('참여', L.joined + '<small>명</small>') + tile('완료', L.finished + '<small>명</small>') + tile('평균 점수', L.avg.toFixed(1) + `<small>/${q.questions.length}</small>`)
+      + tile('만점자', L.perfectCount + '<small>명</small>') + tile('최고 점수', L.best) + tile('최단 풀이', L.fastest == null ? '-' : PM.sec(L.fastest));
+    $('#q-tie').innerHTML = L.tieAtCutoff ? '<div class="warn-box">⚠ 수상 경계에 풀이 시간이 완전히 같은 동점자가 있습니다. 사전 공지된 추가 기준을 적용하세요.</div>' : '';
+    $('#q-win').innerHTML = L.winners.map((w) => `<tr><td><b class="rank-${w.award_rank}">${w.award_rank}위</b></td><td><b>${esc(w.name)}</b></td><td>${esc(w.organization)}</td><td>${PM.sec(w.elapsed_ms)}</td></tr>`).join('')
+      || '<tr><td colspan="4" class="muted center">아직 만점자가 없습니다.</td></tr>';
+    $('#q-rank').innerHTML = L.ranking.slice(0, 300).map((r) => `<tr><td>${r.rank || '-'}</td><td>${esc(r.name)}</td><td>${r.correct}/${r.total}${r.all_correct ? ' 🎯' : ''}</td>
+      <td class="muted">${r.finished ? '완료' : r.answered + '/' + r.total}</td><td class="muted">${q.started_at ? PM.sec(r.elapsed_ms) : '-'}</td></tr>`).join('')
+      || '<tr><td colspan="5" class="muted center">참여자가 없습니다.</td></tr>';
+  }
+  setInterval(() => {
+    if (!S) return; const q = S.quiz;
+    $('#q-timer').textContent = q.state === 'RUNNING' && q.deadline ? `⏱ 자동 마감까지 ${Math.max(0, Math.ceil((q.deadline - PM.serverNow()) / 1000))}초` : '';
+  }, 500);
+  $('#q-actions').onclick = async (e) => {
+    const b = e.target.closest('[data-qa]'); if (!b) return;
+    const a = b.dataset.qa;
+    const confirmMsg = { start: '퀴즈를 시작할까요? 모든 참가자 화면에 첫 문제가 표시됩니다.', close: '퀴즈를 지금 마감할까요? 이후 답안 제출이 불가합니다.', reveal: '행사장 스크린에 결과를 공개할까요?', reset: '퀴즈 참여 기록을 모두 삭제하고 준비 상태로 되돌릴까요?' }[a];
+    if (confirmMsg && !confirm(confirmMsg)) return;
+    if (a === 'start' && qDirty) return toast('저장하지 않은 문제 변경이 있습니다. 먼저 저장하세요.', 'error');
+    b.disabled = true;
+    try { await act('/api/admin/quiz/state', { action: a }); } catch (er) { b.disabled = false; }
+  };
+  function loadQuizDraft() {
+    qDraft = JSON.parse(JSON.stringify(S.quiz.questions));
+    $('#q-title').value = S.quiz.title; $('#q-wc').value = S.quiz.winnerCount;
+    qDirty = false; $('#q-dirty').textContent = '';
+    renderEditor();
+  }
+  const editable = () => ['IDLE', 'OPEN'].includes(S.quiz.state);
+  function lockQuizEditor() {
+    const ed = editable();
+    $('#q-lock').classList.toggle('hidden', ed);
+    $$('#tab-quiz #q-editor input, #tab-quiz #q-editor textarea, #tab-quiz #q-editor button, #q-add, #q-save, #q-revert, #q-title, #q-wc').forEach((el) => el.disabled = !ed);
+  }
+  function renderEditor() {
+    $('#q-editor').innerHTML = qDraft.map((q, i) => `<div class="q-card" data-i="${i}">
+      <div class="row" style="margin-bottom:8px"><b class="deep">Q${i + 1}</b><span class="grow"></span>
+        <label class="row muted">제한 시간 <input type="number" min="5" max="300" data-k="time_limit" value="${q.time_limit}" style="width:80px"> 초</label>
+        <button class="btn btn-sm" data-mv="-1" ${i === 0 ? 'disabled' : ''}>▲</button><button class="btn btn-sm" data-mv="1" ${i === qDraft.length - 1 ? 'disabled' : ''}>▼</button>
+        <button class="btn btn-sm btn-danger" data-rm>삭제</button></div>
+      <textarea data-k="question_text" placeholder="문제를 입력하세요" rows="2">${esc(q.question_text)}</textarea>
+      <div style="margin-top:8px">${[0, 1, 2, 3].map((o) => `<div class="opt-row"><input type="radio" name="co${i}" data-co="${o}" ${q.correct_option === o ? 'checked' : ''} title="정답"><span class="l">${PM.LETTERS[o]}</span>
+        <input type="text" data-opt="${o}" value="${esc(q.options[o] || '')}" placeholder="보기 ${PM.LETTERS[o]}"></div>`).join('')}</div>
+      <input type="text" data-k="explanation" value="${esc(q.explanation || '')}" placeholder="해설 (선택 — 결과 발표 후 참가자에게 표시)" style="margin-top:4px">
+    </div>`).join('');
+    lockQuizEditor();
+  }
+  const markDirty = () => { qDirty = true; $('#q-dirty').textContent = '● 저장하지 않은 변경 사항'; };
+  $('#q-editor').addEventListener('input', (e) => {
+    const card = e.target.closest('.q-card'); if (!card) return;
+    const q = qDraft[Number(card.dataset.i)];
+    if (e.target.dataset.k) q[e.target.dataset.k] = e.target.dataset.k === 'time_limit' ? Number(e.target.value) : e.target.value;
+    if (e.target.dataset.opt !== undefined) q.options[Number(e.target.dataset.opt)] = e.target.value;
+    if (e.target.dataset.co !== undefined) q.correct_option = Number(e.target.dataset.co);
+    markDirty();
+  });
+  $('#q-editor').addEventListener('change', (e) => { if (e.target.dataset.co !== undefined) { qDraft[Number(e.target.closest('.q-card').dataset.i)].correct_option = Number(e.target.dataset.co); markDirty(); } });
+  $('#q-editor').onclick = (e) => {
+    const card = e.target.closest('.q-card'); if (!card) return; const i = Number(card.dataset.i);
+    if (e.target.closest('[data-rm]')) { if (!confirm(`Q${i + 1}을 삭제할까요?`)) return; qDraft.splice(i, 1); markDirty(); renderEditor(); }
+    const mv = e.target.closest('[data-mv]');
+    if (mv) { const j = i + Number(mv.dataset.mv); [qDraft[i], qDraft[j]] = [qDraft[j], qDraft[i]]; markDirty(); renderEditor(); }
+  };
+  $('#q-title').oninput = markDirty; $('#q-wc').oninput = markDirty;
+  $('#q-add').onclick = () => { qDraft.push({ question_text: '', options: ['', '', '', ''], correct_option: 0, time_limit: 15, explanation: '' }); markDirty(); renderEditor(); };
+  $('#q-revert').onclick = () => { if (confirm('저장된 상태로 되돌릴까요?')) loadQuizDraft(); };
+  $('#q-save').onclick = async () => {
+    try { await act('/api/admin/quiz', { title: $('#q-title').value, winnerCount: Number($('#q-wc').value), questions: qDraft }, '퀴즈를 저장했습니다'); qDirty = false; $('#q-dirty').textContent = ''; } catch (e) { /* toasted */ }
+  };
+
+  /* ── 설정 · 로그 ── */
+  function fillSettings() {
+    const f = $('#set-f'); const s = S.settings;
+    f.eventName.value = s.eventName; f.checkinCode.value = s.checkinCode; f.allowWalkIn.checked = s.allowWalkIn; f.publicUrl.value = s.publicUrl;
+    if (!$('#sheet-url').value) $('#sheet-url').value = s.sheetCsvUrl || '';
+  }
+  $('#set-f').addEventListener('input', () => { setDirty = true; });
+  $('#set-f').addEventListener('submit', async (ev) => {
+    ev.preventDefault(); const f = ev.target;
+    try { await act('/api/admin/settings', { eventName: f.eventName.value, checkinCode: f.checkinCode.value, allowWalkIn: f.allowWalkIn.checked, publicUrl: f.publicUrl.value }, '설정을 저장했습니다'); setDirty = false; } catch (e) { /* toasted */ }
+  });
+  $('#regen-key').onclick = () => { if (confirm('스크린 키를 재발급하면 기존 스크린 주소로는 인증 코드가 표시되지 않습니다. 계속할까요?')) act('/api/admin/settings', { regenScreenKey: true }, '재발급했습니다. 스크린을 새 주소로 다시 여세요.'); };
+  $$('[data-reset]').forEach((b) => b.onclick = () => {
+    const t = b.dataset.reset; const label = b.textContent;
+    const word = prompt(`"${label}"을(를) 진행합니다. 되돌릴 수 없습니다.\n계속하려면 "초기화"를 입력하세요.`);
+    if (word === '초기화') act('/api/admin/reset', { target: t }, label + ' 완료');
+  });
+  function renderAudit() {
+    $('#audit-body').innerHTML = S.audit.map((a) => `<tr><td class="muted" style="white-space:nowrap">${PM.time(a.at)}</td><td>${esc(ROLE[a.actor] || a.actor)}</td><td><code>${esc(a.action)}</code></td><td>${esc(a.detail)}</td></tr>`).join('');
+  }
+
+  /* ── 모달 ── */
+  function modal(html, sticky) {
+    $('#modal').innerHTML = `<div class="modal-bg"><div class="modal">${html}</div></div>`;
+    const bg = $('#modal .modal-bg');
+    bg.onclick = (e) => { if (!sticky && e.target === bg) closeModal(); if (e.target.closest('[data-close]')) closeModal(); };
+  }
+  function closeModal() { $('#modal').innerHTML = ''; }
+
+  boot();
+})();
+</script>
+</body>
+</html>
